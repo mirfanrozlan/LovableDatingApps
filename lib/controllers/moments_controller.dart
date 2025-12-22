@@ -171,4 +171,18 @@ class MomentsController extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> deletePost(int postId) async {
+    try {
+      final success = await _service.deletePost(postId);
+      if (success) {
+        _moments.removeWhere((m) => m.postId == postId);
+        notifyListeners();
+      }
+      return success;
+    } catch (e) {
+      print('Error deleting post: $e');
+      return false;
+    }
+  }
 }

@@ -105,6 +105,8 @@ class _MeViewState extends State<MeView> {
                                       id,
                                       moment.postId,
                                     ),
+                                onDeletePost:
+                                    (postId) => _controller.deletePost(postId),
                                 currentUserId: _controller.currentUserId,
                               ),
                               const SizedBox(height: 12),

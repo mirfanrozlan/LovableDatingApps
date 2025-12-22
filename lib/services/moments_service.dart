@@ -367,6 +367,29 @@ class MomentsService {
     }
   }
 
+  Future<bool> deletePost(int postId) async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final uri = Uri.https(_authority, '/api/deletePost/$postId');
+      final response = await http.delete(uri, headers: headers);
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return decoded['deleted'] == true;
+      } else {
+        throw Exception('Failed to delete post: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error deleting post: $e');
+    }
+  }
+
   Future<int?> getCurrentUserId() async {
     try {
       // First try to get from explicit storage

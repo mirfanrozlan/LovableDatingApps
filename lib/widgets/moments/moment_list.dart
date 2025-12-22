@@ -57,6 +57,8 @@ class MomentList extends StatelessWidget {
                         commentId,
                         controller.moments[i].postId,
                       ),
+                  onDeletePost:
+                      (postId) => controller.deletePost(postId),
                   currentUserId: controller.currentUserId,
                 ),
           ),

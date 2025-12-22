@@ -123,7 +123,7 @@ class _LoginViewState extends State<LoginView> {
                         Wrap(
                           alignment: WrapAlignment.center,
                           crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 4,
+                          spacing: 0,
                           children: [
                             const Text("Don't have an account?"),
                             TextButton(
@@ -137,32 +137,6 @@ class _LoginViewState extends State<LoginView> {
                           ],
                         ),
                       ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 400),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: AppTheme.primaryDark,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  const Flexible(
-                    child: Text(
-                      "Demo Mode: Click 'Sign In' with any credentials to continue",
                     ),
                   ),
                 ],

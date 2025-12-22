@@ -10,6 +10,7 @@ class MomentCard extends StatefulWidget {
   onAddComment;
   final Future<CommentModel?> Function(int) onLikeComment;
   final Future<bool> Function(int) onDeleteComment;
+  final Future<bool> Function(int) onDeletePost;
   final int? currentUserId;
 
   const MomentCard({
@@ -20,6 +21,7 @@ class MomentCard extends StatefulWidget {
     required this.onAddComment,
     required this.onLikeComment,
     required this.onDeleteComment,
+    required this.onDeletePost,
     this.currentUserId,
   });
 
@@ -170,6 +172,39 @@ class _MomentCardState extends State<MomentCard> {
         setState(() {
           _comments.removeWhere((c) => c.comsId == commentId);
         });
+      }
+    }
+  }
+
+  Future<void> _deletePost() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      final success = await widget.onDeletePost(widget.post.postId);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post deleted')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete post')),
+        );
       }
     }
   }
@@ -357,7 +392,13 @@ class _MomentCardState extends State<MomentCard> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(post.timeAgo),
-            trailing: const Icon(Icons.more_vert),
+            trailing: widget.currentUserId != null &&
+                    widget.currentUserId == post.userId
+                ? IconButton(
+                    onPressed: _deletePost,
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  )
+                : const Icon(Icons.more_vert),
           ),
           if (post.postCaption.isNotEmpty)
             Padding(
