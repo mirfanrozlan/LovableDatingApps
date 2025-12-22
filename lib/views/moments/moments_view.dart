@@ -70,14 +70,6 @@ class _MomentsViewState extends State<MomentsView> {
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            // Refresh both controllers
-                            _allMomentsController.refresh();
-                            _friendMomentsController.refresh();
-                          },
-                          icon: const Icon(Icons.refresh),
-                        ),
                       ],
                     ),
                   ),

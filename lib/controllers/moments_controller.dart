@@ -15,6 +15,8 @@ class MomentsController extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   int? _currentUserId;
+  final Set<int> _seenPostIds = {};
+  bool _hasMore = true;
 
   MomentsController({this.type = MomentsType.all});
 
@@ -23,6 +25,7 @@ class MomentsController extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
   int? get currentUserId => _currentUserId;
+  bool get hasMore => _hasMore;
 
   Future<void> loadMoments() async {
     if (_loading) return;
@@ -33,6 +36,8 @@ class MomentsController extends ChangeNotifier {
 
     try {
       _currentUserId = await _service.getCurrentUserId();
+      _seenPostIds.clear();
+      _hasMore = true;
       if (type == MomentsType.all) {
         _moments = await _service.getMoments();
       } else if (type == MomentsType.friends) {
@@ -48,18 +53,27 @@ class MomentsController extends ChangeNotifier {
           final rawMoments = results[1] as List<MomentModel>;
 
           // Inject user info into moments since /api/getUserPost doesn't return it
-          _moments =
-              rawMoments
-                  .map(
-                    (m) => m.copyWith(
-                      userName: _userProfile!.name,
-                      userMedia: _userProfile!.media,
-                    ),
-                  )
-                  .toList();
+          final mapped = rawMoments
+              .map(
+                (m) => m.copyWith(
+                  userName: _userProfile!.name,
+                  userMedia: _userProfile!.media,
+                ),
+              )
+              .toList();
+          _moments = mapped;
         } else {
           _moments = await _service.getMyMoments(); // This will throw if no ID
         }
+      }
+      if (_moments.isNotEmpty) {
+        final unique = <MomentModel>[];
+        for (final m in _moments) {
+          if (_seenPostIds.add(m.postId)) unique.add(m);
+        }
+        _moments = unique;
+      } else {
+        _hasMore = false;
       }
     } catch (e) {
       _error = e.toString();
@@ -72,6 +86,36 @@ class MomentsController extends ChangeNotifier {
   Future<void> refresh() async {
     _moments = [];
     await loadMoments();
+  }
+
+  Future<void> loadMore() async {
+    if (_loading || !_hasMore) return;
+    _loading = true;
+    notifyListeners();
+    try {
+      List<MomentModel> more = [];
+      if (type == MomentsType.all) {
+        more = await _service.getMoments();
+      } else if (type == MomentsType.friends) {
+        more = await _service.getFriendMoments();
+      } else if (type == MomentsType.me) {
+        more = await _service.getMyMoments();
+      }
+      final added = <MomentModel>[];
+      for (final m in more) {
+        if (_seenPostIds.add(m.postId)) added.add(m);
+      }
+      if (added.isEmpty) {
+        _hasMore = false;
+      } else {
+        _moments.addAll(added);
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> likePost(int postId) async {
