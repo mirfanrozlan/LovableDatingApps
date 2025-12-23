@@ -14,136 +14,233 @@ class MessagesListView extends StatefulWidget {
 
 class _MessagesListViewState extends State<MessagesListView> {
   late final MessagesController _controller;
+  final _search = TextEditingController();
+  final _searchFocus = FocusNode();
+  String _searchQuery = '';
+  bool _searchOpen = false;
 
   @override
   void initState() {
     super.initState();
     _controller = MessagesController();
     _controller.loadChats();
+    _search.addListener(() {
+      setState(() {
+        _searchQuery = _search.text.trim().toLowerCase();
+      });
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
-      useGradient: false,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: const [
-                Text(
-                  'Chats',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                Spacer(),
-                Icon(Icons.search),
-                SizedBox(width: 12),
-                Icon(Icons.create),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) {
-                    if (_controller.isLoading && _controller.chats.isEmpty) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (_controller.error != null) {
-                      return Center(child: Text('Error: ${_controller.error}'));
-                    }
-
-                    if (_controller.chats.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No chats yet. Find friends!',
-                          style: TextStyle(color: Colors.grey),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    const Color(0xFF1a1a1a),
+                    const Color(0xFF0a0a0a),
+                  ]
+                : [
+                    const Color(0xFFF0FDF4),
+                    const Color(0xFFDCFCE7),
+                  ],
+          ),
+        ),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF10B981), Color(0xFF059669)],
                         ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      itemCount: _controller.chats.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, i) {
-                        final c = _controller.chats[i];
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage:
-                                c.avatarUrl != null && c.avatarUrl!.isNotEmpty
-                                    ? NetworkImage(c.avatarUrl!)
-                                    : null,
-                            onBackgroundImageError: (exception, stackTrace) {
-                              // Fallback
-                            },
-                            child:
-                                c.avatarUrl == null || c.avatarUrl!.isEmpty
-                                    ? Text(c.initials)
-                                    : null,
-                          ),
-                          title: Text(c.name),
-                          subtitle: Text(
-                            c.lastMessage,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                c.time,
-                                style: TextStyle(
-                                  color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _searchOpen
+                          ? Material(
+                              color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.search, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _search,
+                                        focusNode: _searchFocus,
+                                        decoration: const InputDecoration(
+                                          hintText: 'Search chats',
+                                          border: InputBorder.none,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close, size: 18),
+                                      onPressed: () {
+                                        _search.clear();
+                                        setState(() => _searchOpen = false);
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
-                              if (c.unread > 0)
-                                Container(
-                                  margin: const EdgeInsets.only(top: 6),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primary,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    '${c.unread}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
+                            )
+                          : const Text(
+                              'Chats',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () {
+                        setState(() => _searchOpen = true);
+                        _searchFocus.requestFocus();
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withOpacity(0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.search, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Material(
+                    color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, _) {
+                        final all = _controller.chats;
+                        final items = _searchQuery.isEmpty
+                            ? all
+                            : all.where((c) {
+                                final name = c.name.toLowerCase();
+                                final last = c.lastMessage.toLowerCase();
+                                return name.contains(_searchQuery) || last.contains(_searchQuery);
+                              }).toList();
+
+                        if (_controller.isLoading && items.isEmpty) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        if (_controller.error != null) {
+                          return Center(child: Text('Error: ${_controller.error}'));
+                        }
+
+                        if (items.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'No chats yet. Find friends!',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          itemCount: items.length,
+                          separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E7EB),
+                          ),
+                          itemBuilder: (context, i) {
+                            final c = items[i];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage:
+                                    c.avatarUrl != null && c.avatarUrl!.isNotEmpty
+                                        ? NetworkImage(c.avatarUrl!)
+                                        : null,
+                                child: c.avatarUrl == null || c.avatarUrl!.isEmpty ? Text(c.initials) : null,
+                              ),
+                              title: Text(
+                                c.name,
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Text(
+                                c.lastMessage,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    c.time,
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white60 : Colors.black.withValues(alpha: 0.6),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          onTap:
-                              () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.chat,
-                                arguments: c,
+                                  if (c.unread > 0)
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 6),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${c.unread}',
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                      ),
+                                    ),
+                                ],
                               ),
+                              onTap: () => Navigator.pushNamed(context, AppRoutes.chat, arguments: c),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
