@@ -37,16 +37,7 @@ class _PostMomentViewState extends State<PostMomentView> {
     }
   }
 
-  Future<void> _pickCamera() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
+  // Camera capture removed per design
 
   Future<void> _postMoment() async {
     if (_textController.text.isEmpty && _selectedImage == null) {
@@ -154,20 +145,27 @@ class _PostMomentViewState extends State<PostMomentView> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: _pickImage,
-                            icon: const Icon(Icons.image, color: AppTheme.primary),
-                            tooltip: 'Pick from gallery',
+                      if (_selectedImage == null)
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            height: 180,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.black12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.add, size: 32, color: AppTheme.primary),
+                                SizedBox(height: 8),
+                                Text('Add image', style: TextStyle(color: Colors.grey)),
+                              ],
+                            ),
                           ),
-                          IconButton(
-                            onPressed: _pickCamera,
-                            icon: const Icon(Icons.photo_camera, color: AppTheme.primary),
-                            tooltip: 'Take a photo',
-                          ),
-                        ],
-                      ),
+                        ),
                       if (_selectedImage != null) ...[
                         const SizedBox(height: 8),
                         Stack(
