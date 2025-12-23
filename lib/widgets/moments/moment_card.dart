@@ -13,6 +13,7 @@ class MomentCard extends StatefulWidget {
   final Future<bool> Function(int) onDeleteComment;
   final Future<bool> Function(int) onDeletePost;
   final int? currentUserId;
+  final bool flat;
 
   const MomentCard({
     super.key,
@@ -24,6 +25,7 @@ class MomentCard extends StatefulWidget {
     required this.onDeleteComment,
     required this.onDeletePost,
     this.currentUserId,
+    this.flat = false,
   });
 
   @override
@@ -405,8 +407,8 @@ class _MomentCardState extends State<MomentCard> {
     final post = widget.post;
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 2,
+      borderRadius: widget.flat ? BorderRadius.zero : BorderRadius.circular(16),
+      elevation: widget.flat ? 0 : 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

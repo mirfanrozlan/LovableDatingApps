@@ -5,6 +5,8 @@ import '../../controllers/moments_controller.dart';
 import '../../widgets/moments/moment_card.dart';
 import '../../models/user_model.dart';
 import 'settings_view.dart';
+import '../../themes/theme.dart';
+import 'edit_profile_view.dart';
 
 class MeView extends StatefulWidget {
   const MeView({super.key});
@@ -33,16 +35,17 @@ class _MeViewState extends State<MeView> {
   Widget build(BuildContext context) {
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
-      useGradient: false,
+      useGradient: true,
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('My Profile'),
-          backgroundColor: Colors.white,
+          title: const Text('Me', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.transparent,
           foregroundColor: Colors.black,
           elevation: 0,
           actions: [
             IconButton(
-              icon: const Icon(Icons.settings),
+              icon: const Icon(Icons.settings, color: Colors.black87),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -53,7 +56,7 @@ class _MeViewState extends State<MeView> {
           ],
         ),
         body: Container(
-          color: Colors.white,
+          color: Colors.transparent,
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
@@ -71,7 +74,21 @@ class _MeViewState extends State<MeView> {
                   slivers: [
                     if (_controller.userProfile != null)
                       SliverToBoxAdapter(
-                        child: _ProfileHeader(user: _controller.userProfile!),
+                        child: _ProfileHeader(
+                          user: _controller.userProfile!,
+                          postsCount: _controller.moments.length,
+                          totalLikes: _controller.moments.fold<int>(0, (sum, m) => sum + m.postLikes),
+                          interestsCount: _controller.userProfile!.interests
+                                  .split(',')
+                                  .where((e) => e.trim().isNotEmpty)
+                                  .length,
+                          onEditProfile: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const EditProfileView()),
+                            );
+                          },
+                        ),
                       ),
                     if (_controller.moments.isEmpty)
                       const SliverFillRemaining(
@@ -108,6 +125,7 @@ class _MeViewState extends State<MeView> {
                                 onDeletePost:
                                     (postId) => _controller.deletePost(postId),
                                 currentUserId: _controller.currentUserId,
+                                flat: true,
                               ),
                               const SizedBox(height: 12),
                             ],
@@ -127,71 +145,96 @@ class _MeViewState extends State<MeView> {
 
 class _ProfileHeader extends StatelessWidget {
   final UserModel user;
+  final int postsCount;
+  final int totalLikes;
+  final int interestsCount;
+  final VoidCallback onEditProfile;
 
-  const _ProfileHeader({required this.user});
+  const _ProfileHeader({
+    required this.user,
+    required this.postsCount,
+    required this.totalLikes,
+    required this.interestsCount,
+    required this.onEditProfile,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundImage:
-                user.media.isNotEmpty ? NetworkImage(user.media) : null,
-            child:
-                user.media.isEmpty
-                    ? Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 32),
-                    )
-                    : null,
+          Container(
+            height: 140,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: AppTheme.brandGradient,
+            ),
+            alignment: Alignment.bottomLeft,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundImage: user.media.isNotEmpty ? NetworkImage(user.media) : null,
+                  child: user.media.isEmpty
+                      ? Text(
+                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.name,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.black),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${user.age}, ${user.gender} • ${user.city}, ${user.country}',
+                        style: TextStyle(color: Colors.black.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            user.name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${user.age}, ${user.gender} • ${user.city}, ${user.country}',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
+          const SizedBox(height: 12),
           if (user.description.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
               user.description,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
           ],
-          if (user.interests.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children:
-                  user.interests.split(',').map((interest) {
-                    final label = interest.trim();
-                    if (label.isEmpty) return const SizedBox.shrink();
-                    return Chip(
-                      label: Text(label),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.1),
-                      labelStyle: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    );
-                  }).toList(),
-            ),
-          ],
-          const SizedBox(height: 24),
-          const Divider(),
+          // Interests removed per design
         ],
       ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  const _StatItem({required this.label, required this.value});
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(color: Colors.black.withOpacity(0.6), fontSize: 12)),
+      ],
     );
   }
 }
