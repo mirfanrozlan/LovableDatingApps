@@ -37,35 +37,126 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
-      useGradient: false,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Center(
-              child: Text(
-                'Discover',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    const Color(0xFF1a1a1a),
+                    const Color(0xFF0a0a0a),
+                  ]
+                : [
+                    const Color(0xFFF0FDF4),
+                    const Color(0xFFDCFCE7),
+                  ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 600),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildHeader(isDark),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: _controller.loading && _controller.profiles.isEmpty
+                        ? Center(
+                            child: CircularProgressIndicator(
+                              color: const Color(0xFF10B981),
+                            ),
+                          )
+                        : _controller.profiles.isEmpty
+                            ? _buildEmptyState(isDark)
+                            : _CardStack(
+                                controller: _controller,
+                                isDark: isDark,
+                              ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child:
-                  _controller.loading && _controller.profiles.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
-                      : _controller.profiles.isEmpty
-                      ? const Center(child: Text('No more profiles to show'))
-                      : _CardStack(controller: _controller),
-            ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF059669)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.explore,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          'Discover',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+            letterSpacing: -0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF10B981).withOpacity(0.1),
+            ),
+            child: Icon(
+              Icons.people_outline,
+              size: 64,
+              color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No more profiles',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Check back later for new matches',
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white60 : const Color(0xFF666666),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -73,7 +164,12 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
 
 class _CardStack extends StatefulWidget {
   final DiscoverController controller;
-  const _CardStack({required this.controller});
+  final bool isDark;
+
+  const _CardStack({
+    required this.controller,
+    required this.isDark,
+  });
 
   @override
   State<_CardStack> createState() => _CardStackState();
@@ -113,8 +209,6 @@ class _CardStackState extends State<_CardStack>
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
       _dragOffset += details.delta;
-      // Calculate rotation angle based on x position
-      // Max rotation is 15 degrees (approx 0.26 rad) at 300px drag
       _angle = (_dragOffset.dx / 300) * 0.26;
     });
   }
@@ -124,18 +218,14 @@ class _CardStackState extends State<_CardStack>
       _isDragging = false;
     });
 
-    // Swipe Threshold: The distance a card must be dragged to trigger an action
     final screenWidth = MediaQuery.of(context).size.width;
     final threshold = screenWidth * 0.3;
 
     if (_dragOffset.dx > threshold) {
-      // Swipe Right -> Like / Accept
       _animateOut(Offset(screenWidth * 1.5, _dragOffset.dy), true);
     } else if (_dragOffset.dx < -threshold) {
-      // Swipe Left -> Reject / Dismiss
       _animateOut(Offset(-screenWidth * 1.5, _dragOffset.dy), false);
     } else {
-      // Snap back if threshold not met
       _animateBack();
     }
   }
@@ -183,7 +273,6 @@ class _CardStackState extends State<_CardStack>
     animation.addListener(listener);
     _animationController.forward().then((_) {
       animation.removeListener(listener);
-      // Reset state for next card
       _dragOffset = Offset.zero;
       _angle = 0;
       if (isLike) {
@@ -205,7 +294,6 @@ class _CardStackState extends State<_CardStack>
   }
 
   double get _nextCardScale {
-    // Scale from 0.9 to 1.0 based on drag distance
     final distance = _dragOffset.distance;
     final maxDistance = 300.0;
     final progress = (distance / maxDistance).clamp(0.0, 1.0);
@@ -231,7 +319,11 @@ class _CardStackState extends State<_CardStack>
             child: Center(
               child: Transform.scale(
                 scale: _nextCardScale,
-                child: _SingleCard(p: nextP, isBackground: true),
+                child: _SingleCard(
+                  p: nextP,
+                  isBackground: true,
+                  isDark: widget.isDark,
+                ),
               ),
             ),
           ),
@@ -251,6 +343,7 @@ class _CardStackState extends State<_CardStack>
                   controller: widget.controller,
                   onLike: _triggerLike,
                   onDislike: _triggerDislike,
+                  isDark: widget.isDark,
                 ),
               ),
             ),
@@ -261,67 +354,77 @@ class _CardStackState extends State<_CardStack>
         if (_isDragging)
           Positioned.fill(
             child: IgnorePointer(
-              child: FractionallySizedBox(
-                widthFactor: 1.0,
-                heightFactor: 1.0,
-                child: Stack(
-                  children: [
-                    if (_dragOffset.dx > 20)
-                      Positioned(
-                        top: 40,
-                        left: 40,
-                        child: Transform.rotate(
-                          angle: -0.2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.green, width: 4),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'LIKE',
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
+              child: Stack(
+                children: [
+                  if (_dragOffset.dx > 20)
+                    Positioned(
+                      top: 60,
+                      left: 40,
+                      child: Transform.rotate(
+                        angle: -0.2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
+                            ],
+                          ),
+                          child: const Text(
+                            'LIKE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
                             ),
                           ),
                         ),
                       ),
-                    if (_dragOffset.dx < -20)
-                      Positioned(
-                        top: 40,
-                        right: 40,
-                        child: Transform.rotate(
-                          angle: 0.2,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.red, width: 4),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'NOPE',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
+                    ),
+                  if (_dragOffset.dx < -20)
+                    Positioned(
+                      top: 60,
+                      right: 40,
+                      child: Transform.rotate(
+                        angle: 0.2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
+                            ],
+                          ),
+                          child: const Text(
+                            'REJECT',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
                             ),
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -333,12 +436,14 @@ class _CardStackState extends State<_CardStack>
 class _SingleCard extends StatelessWidget {
   final DiscoverProfileModel p;
   final bool isBackground;
+  final bool isDark;
   final DiscoverController? controller;
   final VoidCallback? onLike;
   final VoidCallback? onDislike;
 
   const _SingleCard({
     required this.p,
+    required this.isDark,
     this.isBackground = false,
     this.controller,
     this.onLike,
@@ -347,133 +452,210 @@ class _SingleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black,
-      borderRadius: BorderRadius.circular(24),
-      elevation: isBackground ? 0 : 8,
-      child: Stack(
-        children: [
-          // Background Image
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child:
-                  p.media.isNotEmpty
-                      ? Image.network(
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isBackground ? 0.1 : 0.3),
+            blurRadius: isBackground ? 20 : 40,
+            offset: Offset(0, isBackground ? 10 : 20),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          children: [
+            // Background Image
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: p.media.isNotEmpty
+                    ? Image.network(
                         p.media,
                         fit: BoxFit.cover,
-                        errorBuilder:
-                            (ctx, err, stack) =>
-                                Container(color: Colors.grey.shade800),
+                        errorBuilder: (ctx, err, stack) => Container(
+                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
+                          child: Icon(
+                            Icons.person,
+                            size: 100,
+                            color: isDark ? Colors.white24 : Colors.black26,
+                          ),
+                        ),
                       )
-                      : Container(color: Colors.grey.shade800),
+                    : Container(
+                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
+                        child: Icon(
+                          Icons.person,
+                          size: 100,
+                          color: isDark ? Colors.white24 : Colors.black26,
+                        ),
+                      ),
+              ),
             ),
-          ),
-          // Gradient Overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.0),
-                    Colors.black.withValues(alpha: 0.8),
-                    Colors.black.withValues(alpha: 0.95),
-                  ],
-                  stops: const [0.0, 0.5, 0.8, 1.0],
+            // Gradient Overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(32),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.0),
+                      Colors.black.withOpacity(0.7),
+                      Colors.black.withOpacity(0.95),
+                    ],
+                    stops: const [0.0, 0.4, 0.75, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-          // Content
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${p.name} ( ${p.age} yrs )',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  p.description.isNotEmpty
-                      ? p.description
-                      : 'No description available.',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (p.city.isNotEmpty || p.country.isNotEmpty)
+            // Content
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: 24,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Row(
                     children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        color: Colors.white70,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${p.city}, ${p.country}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
+                      Expanded(
+                        child: Text(
+                          '${p.name}, ${p.age}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                const SizedBox(height: 24),
-                if (!isBackground && controller != null)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _ActionButton(
-                        icon: Icons.close,
-                        color: Colors.red,
-                        size: 32,
-                        onPressed: onDislike ?? () {},
-                      ),
-                      const SizedBox(width: 24),
-                      _ActionButton(
-                        icon: Icons.info_outline,
-                        color: Colors.white,
-                        size: 20,
-                        onPressed:
-                            () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.discoverDetail,
-                              arguments: p,
+                      if (p.subscription == 'premium' || p.subscription == 'plus')
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
                             ),
-                      ),
-                      const SizedBox(width: 24),
-                      _ActionButton(
-                        icon: Icons.favorite,
-                        color: const Color(0xFF4CD964), // Tinder-like green
-                        size: 32,
-                        onPressed: onLike ?? () {},
-                      ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.verified,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
                     ],
                   ),
-                const SizedBox(height: 10),
-              ],
+                  const SizedBox(height: 12),
+                  if (p.description.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        p.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  if (p.city.isNotEmpty || p.country.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white70,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${p.city}, ${p.country}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (p.interests.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: p.interests.take(3).map((interest) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            interest,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  if (!isBackground && controller != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _ActionButton(
+                          icon: Icons.close,
+                          color: Colors.red,
+                          size: 22,
+                          onPressed: onDislike ?? () {},
+                        ),
+                        const SizedBox(width: 16),
+                        _ActionButton(
+                          icon: Icons.info_outline,
+                          color: Colors.white,
+                          size: 20,
+                          onPressed: () => Navigator.pushNamed(
+                            context,
+                            AppRoutes.discoverDetail,
+                            arguments: p,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        _ActionButton(
+                          icon: Icons.favorite,
+                          color: const Color(0xFF10B981),
+                          size: 22,
+                          onPressed: onLike ?? () {},
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -500,13 +682,21 @@ class _ActionButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(50),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: color, width: 1.5),
-            color: Colors.black.withValues(
-              alpha: 0.3,
-            ), // Semi-transparent background
+            color: Colors.white.withOpacity(0.15),
+            border: Border.all(
+              color: color.withOpacity(0.7),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Icon(icon, color: color, size: size),
         ),
