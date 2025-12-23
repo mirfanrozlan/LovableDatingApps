@@ -427,9 +427,23 @@ class _MomentCardState extends State<MomentCard> {
             subtitle: Text(post.timeAgo),
             trailing: widget.currentUserId != null &&
                     widget.currentUserId == post.userId
-                ? IconButton(
-                    onPressed: _deletePost,
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                ? PopupMenuButton<int>(
+                    icon: const Icon(Icons.more_vert, color: Colors.black87),
+                    onSelected: (value) {
+                      if (value == 1) _deletePost();
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<int>(
+                        value: 1,
+                        child: Row(
+                          children: const [
+                            Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                            SizedBox(width: 8),
+                            Text('Delete post'),
+                          ],
+                        ),
+                      ),
+                    ],
                   )
                 : null,
           ),
