@@ -9,6 +9,7 @@ class CommentModel {
   final String createdAt;
   final String userName;
   final String userMedia;
+  final bool likedByMe;
 
   CommentModel({
     required this.comsId,
@@ -21,6 +22,7 @@ class CommentModel {
     required this.createdAt,
     required this.userName,
     required this.userMedia,
+    this.likedByMe = false,
   });
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class CommentModel {
       createdAt: json['coms_createdAt'] ?? '',
       userName: json['user_name'] ?? 'Unknown',
       userMedia: resolveUrl(json['user_media']),
+      likedByMe: (json['liked_by_me'] ?? false) == true,
     );
   }
 
@@ -81,6 +84,7 @@ class CommentModel {
     String? createdAt,
     String? userName,
     String? userMedia,
+    bool? likedByMe,
   }) {
     return CommentModel(
       comsId: comsId ?? this.comsId,
@@ -93,6 +97,7 @@ class CommentModel {
       createdAt: createdAt ?? this.createdAt,
       userName: userName ?? this.userName,
       userMedia: userMedia ?? this.userMedia,
+      likedByMe: likedByMe ?? this.likedByMe,
     );
   }
 }

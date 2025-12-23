@@ -39,31 +39,61 @@ class _MomentsViewState extends State<MomentsView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return DefaultTabController(
       length: 2,
       child: AppScaffold(
         bottomNavigationBar: const AppBottomNav(currentIndex: 2),
-        useGradient: false,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? [
+                      const Color(0xFF1a1a1a),
+                      const Color(0xFF0a0a0a),
+                    ]
+                  : [
+                      const Color(0xFFF0FDF4),
+                      const Color(0xFFDCFCE7),
+                    ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.image, color: Colors.white, size: 18),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: TabBar(
-                            labelColor: Theme.of(context).primaryColor,
-                            unselectedLabelColor: Colors.grey,
-                            indicatorColor: Theme.of(context).primaryColor,
+                            isScrollable: false,
+                            labelPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                            indicator: const UnderlineTabIndicator(
+                              borderSide: BorderSide(color: Color(0xFF10B981), width: 2),
+                              insets: EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            indicatorSize: TabBarIndicatorSize.label,
+                            labelColor: const Color(0xFF10B981),
+                            unselectedLabelColor: isDark ? Colors.white70 : const Color(0xFF6B7280),
+                            labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                             tabs: const [
                               Tab(text: 'All'),
                               Tab(text: 'Friends'),
@@ -73,38 +103,54 @@ class _MomentsViewState extends State<MomentsView> {
                       ],
                     ),
                   ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      MomentList(controller: _allMomentsController),
-                      MomentList(controller: _friendMomentsController),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        MomentList(controller: _allMomentsController),
+                        MomentList(controller: _friendMomentsController),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF10B981), Color(0xFF059669)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF10B981).withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
                     ],
                   ),
+                  child: FloatingActionButton(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PostMomentView(),
+                        ),
+                      );
+                      if (result == true) {
+                        _allMomentsController.refresh();
+                        _friendMomentsController.refresh();
+                      }
+                    },
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
                 ),
-              ],
-            ),
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: FloatingActionButton(
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PostMomentView(),
-                    ),
-                  );
-                  if (result == true) {
-                    _allMomentsController.refresh();
-                    _friendMomentsController.refresh();
-                  }
-                },
-                backgroundColor: Theme.of(context).primaryColor,
-                child: const Icon(Icons.add, color: Colors.white),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

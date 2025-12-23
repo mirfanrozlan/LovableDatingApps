@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/moment_model.dart';
 import '../../models/comment_model.dart';
+import '../../themes/theme.dart';
 
 class MomentCard extends StatefulWidget {
   final MomentModel post;
@@ -37,6 +38,7 @@ class _MomentCardState extends State<MomentCard> {
   bool _loadingComments = false;
   bool _submittingComment = false;
   CommentModel? _replyingTo;
+  bool _likedPostByMe = false;
 
   @override
   void dispose() {
@@ -130,17 +132,17 @@ class _MomentCardState extends State<MomentCard> {
   }
 
   Future<void> _likeComment(int commentId) async {
+    final index = _comments.indexWhere((c) => c.comsId == commentId);
+    if (index == -1) return;
+    if (_comments[index].likedByMe) return;
     final updatedComment = await widget.onLikeComment(commentId);
-    if (updatedComment != null && mounted) {
-      setState(() {
-        final index = _comments.indexWhere((c) => c.comsId == commentId);
-        if (index != -1) {
-          _comments[index] = _comments[index].copyWith(
-            likes: updatedComment.likes,
-          );
-        }
-      });
-    }
+    if (updatedComment == null || !mounted) return;
+    setState(() {
+      _comments[index] = _comments[index].copyWith(
+        likes: updatedComment.likes,
+        likedByMe: true,
+      );
+    });
   }
 
   Future<void> _deleteComment(int commentId) async {
@@ -258,10 +260,19 @@ class _MomentCardState extends State<MomentCard> {
                           widget.currentUserId == comment.publishId)
                         GestureDetector(
                           onTap: () => _deleteComment(comment.comsId),
-                          child: const Icon(
-                            Icons.delete_outline,
-                            size: 16,
-                            color: Colors.red,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.delete,
+                              size: 18,
+                              color: Colors.red,
+                            ),
                           ),
                         ),
                     ],
@@ -275,10 +286,17 @@ class _MomentCardState extends State<MomentCard> {
               children: [
                 GestureDetector(
                   onTap: () => _likeComment(comment.comsId),
-                  child: const Icon(
-                    Icons.favorite_border,
-                    size: 16,
-                    color: Colors.grey,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Icon(
+                      comment.likedByMe ? Icons.favorite : Icons.favorite_border,
+                      key: ValueKey<bool>(comment.likedByMe),
+                      size: 18,
+                      color:
+                          comment.likedByMe ? const Color(0xFF10B981) : Colors.grey,
+                    ),
                   ),
                 ),
                 if (comment.likes > 0)
@@ -289,7 +307,20 @@ class _MomentCardState extends State<MomentCard> {
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => _startReply(comment),
-                  child: const Icon(Icons.reply, size: 16, color: Colors.grey),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.reply,
+                      size: 18,
+                      color: AppTheme.primary,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -374,7 +405,7 @@ class _MomentCardState extends State<MomentCard> {
     final post = widget.post;
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       elevation: 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +429,7 @@ class _MomentCardState extends State<MomentCard> {
                     onPressed: _deletePost,
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                   )
-                : const Icon(Icons.more_vert),
+                : null,
           ),
           if (post.postCaption.isNotEmpty)
             Padding(
@@ -409,45 +440,74 @@ class _MomentCardState extends State<MomentCard> {
           if (post.postMedia.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  0,
-                ), // Full width usually looks better or slightly rounded
-                child: Image.network(
-                  post.postMedia,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 300,
-                  errorBuilder:
-                      (ctx, err, stack) => Container(
-                        height: 200,
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(Icons.broken_image, color: Colors.grey),
-                        ),
+              child: Image.network(
+                post.postMedia,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 300,
+                errorBuilder:
+                    (ctx, err, stack) => Container(
+                      height: 200,
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
                       ),
-                ),
+                    ),
               ),
             ),
+          const Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                IconButton(
-                  onPressed: widget.onLike,
-                  icon: const Icon(Icons.favorite_border),
+                GestureDetector(
+                  onTap: () {
+                    if (_likedPostByMe) return;
+                    setState(() => _likedPostByMe = true);
+                    widget.onLike();
+                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Icon(
+                      _likedPostByMe ? Icons.favorite : Icons.favorite_border,
+                      key: ValueKey<bool>(_likedPostByMe),
+                      size: 22,
+                      color:
+                          _likedPostByMe ? const Color(0xFF10B981) : Colors.black87,
+                    ),
+                  ),
                 ),
-                Text('${post.postLikes}'),
+                const SizedBox(width: 6),
+                Text(
+                  '${post.postLikes}',
+                  style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                ),
                 const SizedBox(width: 12),
-                IconButton(
-                  onPressed: _toggleComments,
-                  icon: const Icon(Icons.mode_comment_outlined),
+                GestureDetector(
+                  onTap: _toggleComments,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Icon(
+                      _showComments
+                          ? Icons.mode_comment
+                          : Icons.mode_comment_outlined,
+                      key: ValueKey<bool>(_showComments),
+                      color: _showComments ? AppTheme.primary : Colors.black87,
+                    ),
+                  ),
                 ),
-                Text('${post.commentsCount}'),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.share_outlined),
+                const SizedBox(width: 6),
+                Text(
+                  '${post.commentsCount}',
+                  style: TextStyle(
+                    color: _showComments
+                        ? AppTheme.primary
+                        : Colors.black.withOpacity(0.6),
+                  ),
                 ),
               ],
             ),
@@ -473,7 +533,10 @@ class _MomentCardState extends State<MomentCard> {
                         horizontal: 12,
                         vertical: 8,
                       ),
-                      color: Colors.grey.shade100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Row(
                         children: [
                           Expanded(
@@ -504,7 +567,9 @@ class _MomentCardState extends State<MomentCard> {
                           focusNode: _focusNode,
                           decoration: const InputDecoration(
                             hintText: 'Add a comment...',
-                            border: OutlineInputBorder(),
+                            border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(12))),
+                            fillColor: Color(0xFFF3F4F6),
+                            filled: true,
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 8,
@@ -523,7 +588,7 @@ class _MomentCardState extends State<MomentCard> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                                : const Icon(Icons.send, color: Colors.blue),
+                                : const Icon(Icons.send, color: AppTheme.primary),
                       ),
                     ],
                   ),

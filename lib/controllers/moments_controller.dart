@@ -123,7 +123,10 @@ class MomentsController extends ChangeNotifier {
       final updatedPost = await _service.likePost(postId);
       final index = _moments.indexWhere((m) => m.postId == postId);
       if (index != -1) {
-        _moments[index] = updatedPost;
+        final current = _moments[index];
+        _moments[index] = current.copyWith(
+          postLikes: updatedPost.postLikes,
+        );
         notifyListeners();
       }
     } catch (e) {
