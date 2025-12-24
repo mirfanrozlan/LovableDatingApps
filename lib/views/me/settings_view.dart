@@ -161,20 +161,36 @@ class _SettingsViewState extends State<SettingsView> {
               Material(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    onPressed: () async {
-                      await AuthService().logout();
-                      if (context.mounted) {
-                        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
-                      }
-                    },
-                    child: const Text('Log Out'),
+                child: InkWell(
+                  onTap: () async {
+                    await AuthService().logout();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    height: 56,
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.logout, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text(
+                          'Log Out',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
