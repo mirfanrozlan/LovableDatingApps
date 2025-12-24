@@ -2,136 +2,227 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../themes/theme.dart';
+import '../../widgets/common/text_input.dart';
+import '../../services/moments_service.dart';
+import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
 
-class AccountView extends StatelessWidget {
+class AccountView extends StatefulWidget {
   const AccountView({super.key});
+
+  @override
+  State<AccountView> createState() => _AccountViewState();
+}
+
+class _AccountViewState extends State<AccountView> {
+  final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _gender = TextEditingController();
+  final _age = TextEditingController();
+  final _bio = TextEditingController();
+  final _education = TextEditingController();
+  final _interests = TextEditingController();
+  final _address = TextEditingController();
+  final _postcode = TextEditingController();
+  final _state = TextEditingController();
+  final _city = TextEditingController();
+  final _country = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  int? _userId;
+  bool _loading = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final ms = MomentsService();
+      final id = await ms.getCurrentUserId();
+      if (id == null) {
+        setState(() {
+          _loading = false;
+        });
+        return;
+      }
+      final user = await ms.getUserDetails(id);
+      _applyUser(user);
+    } catch (_) {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  void _applyUser(UserModel user) {
+    _userId = user.id;
+    _name.text = user.name;
+    _gender.text = user.gender;
+    _age.text = user.age.toString();
+    _bio.text = user.description;
+    _education.text = user.education;
+    _interests.text = user.interests;
+    _address.text = user.address;
+    _postcode.text = user.postcode;
+    _state.text = user.state;
+    _city.text = user.city;
+    _country.text = user.country;
+    setState(() {
+      _loading = false;
+    });
+  }
+
+  Future<void> _save() async {
+    if (_formKey.currentState?.validate() != true) return;
+    if (_userId == null) return;
+    setState(() {
+      _saving = true;
+    });
+    final svc = AuthService();
+    final ok = await svc.updateProfile(
+      userId: _userId!,
+      username: _name.text.trim(),
+      gender: _gender.text.trim(),
+      age: int.tryParse(_age.text.trim()) ?? 0,
+      bio: _bio.text.trim(),
+      education: _education.text.trim(),
+      address: _address.text.trim(),
+      postcode: _postcode.text.trim(),
+      state: _state.text.trim(),
+      city: _city.text.trim(),
+      country: _country.text.trim(),
+      interests: _interests.text.trim(),
+      email: _email.text.trim(),
+      phone: _phone.text.trim(),
+    );
+    setState(() {
+      _saving = false;
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Profile updated' : 'Failed to update profile'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
-      useGradient: false,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              child: Column(
-                children: const [
-                  ListTile(
-                    leading: Icon(Icons.email),
-                    title: Text('Email'),
-                    subtitle: Text('yourmail@example.com'),
-                    trailing: Icon(Icons.chevron_right),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.phone),
-                    title: Text('Phone'),
-                    subtitle: Text('+1 (555) 123-4567'),
-                    trailing: Icon(Icons.chevron_right),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.lock),
-                    title: Text('Password'),
-                    subtitle: Text('Change password'),
-                    trailing: Icon(Icons.chevron_right),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    label: 'Matches',
-                    value: '247',
-                    color: AppTheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    label: 'Connections',
-                    value: '89',
-                    color: Colors.teal,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    label: 'Messages',
-                    value: '156',
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    label: 'Response Rate',
-                    value: '92%',
-                    color: Colors.purple,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              child: ListTile(
-                title: const Text('Membership'),
-                subtitle: const Text(
-                  'Upgrade to Premium to unlock exclusive features and benefits',
-                ),
-                trailing: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('Upgrade to Premium'),
-                ),
-              ),
-            ),
-          ],
+      useGradient: true,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'Edit Profile',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
         ),
+        body: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 600),
+            padding: const EdgeInsets.all(16),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : Form(
+                    key: _formKey,
+                    child: ListView(
+                      children: [
+                        Material(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                          children: [
+                            TextInput(controller: _name, hint: 'Enter your name', label: 'Name'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _gender, hint: 'Enter your gender', label: 'Gender'),
+                            const SizedBox(height: 12),
+                            TextInput(
+                              controller: _age,
+                              hint: 'Enter your age',
+                              label: 'Age',
+                              keyboardType: TextInputType.number,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Required';
+                                final n = int.tryParse(v);
+                                if (n == null || n <= 0) return 'Invalid age';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _bio, hint: 'Tell us about yourself', label: 'Bio'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _education, hint: 'Your education', label: 'Education'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _interests, hint: 'Your interests', label: 'Interests'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _address, hint: 'Your address', label: 'Address'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _postcode, hint: 'Your postcode', label: 'Postcode'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _state, hint: 'Your state', label: 'State'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _city, hint: 'Your city', label: 'City'),
+                            const SizedBox(height: 12),
+                            TextInput(controller: _country, hint: 'Your country', label: 'Country'),
+                            const SizedBox(height: 12),
+                            TextInput(
+                              controller: _email,
+                              hint: 'Your email address',
+                              label: 'Email',
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 12),
+                            TextInput(
+                              controller: _phone,
+                              hint: 'Your phone number',
+                              label: 'Phone',
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _saving ? null : _save,
+                                child: Text(_saving ? 'Saving...' : 'Save Changes'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        title: const Text('Membership'),
+                        subtitle: const Text(
+                          'Upgrade to Premium to unlock exclusive features and benefits',
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: () {},
+                          child: const Text('Upgrade'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
       ),
-    );
+    )));
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Text(label),
-          ],
-        ),
-      ),
-    );
-  }
-}

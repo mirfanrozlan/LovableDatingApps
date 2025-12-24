@@ -139,6 +139,65 @@ class AuthService {
       await storage.delete(key: 'user_id');
     }
   }
+
+  Future<bool> updateProfile({
+    required int userId,
+    required String username,
+    required String gender,
+    required int age,
+    String bio = '',
+    String education = '',
+    String address = '',
+    String postcode = '',
+    String state = '',
+    String city = '',
+    String country = '',
+    String interests = '',
+    String email = '',
+    String phone = '',
+    String subscription = 'no',
+  }) async {
+    try {
+      final storage = const FlutterSecureStorage();
+      final token = await storage.read(key: 'auth_token');
+      final headers = <String, String>{
+        'Accept': 'application/json',
+      };
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/setProfile');
+      final body = {
+        'users[user_id]': userId.toString(),
+        'users[user_name]': username,
+        'users[user_gender]': gender,
+        'users[user_age]': age.toString(),
+        'users[user_desc]': bio,
+        'users[user_education]': education,
+        'users[user_subs]': subscription,
+        'locations[user_address]': address,
+        'locations[user_postcode]': postcode,
+        'locations[user_state]': state,
+        'locations[user_city]': city,
+        'locations[user_country]': country,
+        'interest[user_interest]': interests,
+        'credentials[user_email]': email,
+        'credentials[user_phone]': phone,
+      };
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Update profile error: $e');
+      return false;
+    }
+  }
 }
 
 enum LoginStatus {
