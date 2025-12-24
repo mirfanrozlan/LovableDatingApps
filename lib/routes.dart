@@ -12,11 +12,6 @@ import 'views/discover/discover_list_view.dart';
 import 'views/discover/discover_card_view.dart';
 import 'views/discover/discover_detail_view.dart';
 import 'views/friends/friends_home_view.dart';
-import 'views/friends/friends_add_view.dart';
-import 'views/friends/friends_suggestions_view.dart';
-import 'views/friends/friends_nearby_view.dart';
-import 'views/friends/friends_requests_view.dart';
-import 'views/friends/friends_match_view.dart';
 import 'views/moments/moments_view.dart';
 import 'views/me/me_view.dart';
 import 'views/me/account_view.dart';
@@ -25,6 +20,7 @@ import 'views/me/notifications_view.dart';
 import 'views/me/edit_profile_view.dart';
 import 'views/me/help_support_view.dart';
 import 'views/me/preferences_view.dart';
+import 'views/profile/user_profile_view.dart';
 
 class AppRoutes {
   static const login = '/login';
@@ -39,11 +35,6 @@ class AppRoutes {
   static const discoverList = '/discover-list';
   static const discoverDetail = '/discover-detail';
   static const friends = '/friends';
-  static const friendsAdd = '/friends-add';
-  static const friendsSuggestions = '/friends-suggestions';
-  static const friendsNearby = '/friends-nearby';
-  static const friendsRequests = '/friends-requests';
-  static const friendsMatch = '/friends-match';
   static const moments = '/moments';
   static const me = '/me';
   static const account = '/account';
@@ -53,6 +44,7 @@ class AppRoutes {
   static const help = '/help';
   static const preferences = '/preferences';
   static const home = '/home';
+  static const userProfile = '/user-profile';
 
   static Map<String, WidgetBuilder> get routes => {
     login: (_) => const LoginView(),
@@ -67,11 +59,6 @@ class AppRoutes {
     discoverList: (_) => DiscoverListView(),
     discoverDetail: (_) => const DiscoverDetailView(),
     friends: (_) => const FriendsHomeView(),
-    friendsAdd: (_) => const FriendsAddView(),
-    friendsSuggestions: (_) => FriendsSuggestionsView(),
-    friendsNearby: (_) => FriendsNearbyView(),
-    friendsRequests: (_) => FriendsRequestsView(),
-    friendsMatch: (_) => FriendsMatchView(),
     moments: (_) => MomentsView(),
     me: (_) => const MeView(),
     account: (_) => const AccountView(),
@@ -81,5 +68,6 @@ class AppRoutes {
     help: (_) => const HelpSupportView(),
     preferences: (_) => const PreferencesView(),
     home: (_) => const HomeView(),
+    userProfile: (_) => const UserProfileView(),
   };
 }

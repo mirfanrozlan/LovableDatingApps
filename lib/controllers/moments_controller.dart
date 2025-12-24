@@ -5,10 +5,11 @@ import '../models/comment_model.dart';
 import '../models/user_model.dart';
 import '../services/moments_service.dart';
 
-enum MomentsType { all, friends, me }
+enum MomentsType { all, friends, me, user }
 
 class MomentsController extends ChangeNotifier {
   final MomentsType type;
+  final int? userId;
   final _service = MomentsService();
   List<MomentModel> _moments = [];
   UserModel? _userProfile;
@@ -18,7 +19,7 @@ class MomentsController extends ChangeNotifier {
   final Set<int> _seenPostIds = {};
   bool _hasMore = true;
 
-  MomentsController({this.type = MomentsType.all});
+  MomentsController({this.type = MomentsType.all, this.userId});
 
   List<MomentModel> get moments => _moments;
   UserModel? get userProfile => _userProfile;
@@ -66,6 +67,26 @@ class MomentsController extends ChangeNotifier {
         } else {
           _moments = await _service.getMyMoments(); // This will throw if no ID
         }
+      } else if (type == MomentsType.user) {
+        final targetId = userId;
+        if (targetId == null) {
+          throw Exception('User ID not provided');
+        }
+        try {
+          _userProfile = await _service.getUserDetails(targetId);
+        } catch (_) {
+          _userProfile = null;
+        }
+        final rawMoments = await _service.getUserMoments(targetId);
+        final mapped = rawMoments
+            .map(
+              (m) => m.copyWith(
+                userName: _userProfile?.name ?? m.userName,
+                userMedia: _userProfile?.media ?? m.userMedia,
+              ),
+            )
+            .toList();
+        _moments = mapped;
       }
       if (_moments.isNotEmpty) {
         final unique = <MomentModel>[];
@@ -110,6 +131,21 @@ class MomentsController extends ChangeNotifier {
                 ),
               )
               .toList();
+        }
+      } else if (type == MomentsType.user) {
+        final targetId = userId;
+        if (targetId != null) {
+          more = await _service.getUserMoments(targetId);
+          if (_userProfile != null) {
+            more = more
+                .map(
+                  (m) => m.copyWith(
+                    userName: _userProfile!.name,
+                    userMedia: _userProfile!.media,
+                  ),
+                )
+                .toList();
+          }
         }
       }
       final added = <MomentModel>[];

@@ -142,6 +142,15 @@ class MomentsService {
         throw Exception('User ID not found');
       }
 
+      return await getUserMoments(userId);
+    } catch (e) {
+      throw Exception('Error fetching my moments: $e');
+    }
+  }
+
+  Future<List<MomentModel>> getUserMoments(int userId) async {
+    try {
+      final token = await _storage.read(key: 'auth_token');
       final headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -170,10 +179,10 @@ class MomentsService {
 
         return data.map((json) => MomentModel.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load my moments: ${response.statusCode}');
+        throw Exception('Failed to load user moments: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error fetching my moments: $e');
+      throw Exception('Error fetching user moments: $e');
     }
   }
 
