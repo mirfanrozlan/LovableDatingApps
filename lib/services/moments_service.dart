@@ -379,12 +379,35 @@ class MomentsService {
       }
       final uri = Uri.https(_authority, '/api/deletePost/$postId');
       final response = await http.delete(uri, headers: headers);
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        return decoded['deleted'] == true;
-      } else {
-        throw Exception('Failed to delete post: ${response.statusCode}');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final body = response.body.trim();
+        if (body.isEmpty) return true;
+        try {
+          final decoded = json.decode(body);
+          if (decoded is Map<String, dynamic>) {
+            if (decoded.containsKey('deleted')) {
+              final v = decoded['deleted'];
+              if (v is bool) return v;
+              if (v is num) return v != 0;
+              if (v is String) return v.toLowerCase() == 'true' || v == '1';
+            }
+            if (decoded.containsKey('success')) {
+              final v = decoded['success'];
+              if (v is bool) return v;
+              if (v is num) return v != 0;
+              if (v is String) return v.toLowerCase() == 'true' || v == '1';
+            }
+            if (decoded.containsKey('status')) {
+              final s = decoded['status'].toString().toLowerCase();
+              if (s == 'ok' || s == 'success') return true;
+            }
+          }
+          return true;
+        } catch (_) {
+          return true;
+        }
       }
+      throw Exception('Failed to delete post: ${response.statusCode}');
     } catch (e) {
       throw Exception('Error deleting post: $e');
     }

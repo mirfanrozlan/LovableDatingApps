@@ -71,8 +71,33 @@ class AuthService {
           String? userId;
           if (data['user_id'] != null) {
             userId = data['user_id'].toString();
-          } else if (data['user'] != null && data['user']['user_id'] != null) {
-            userId = data['user']['user_id'].toString();
+          } else if (data['id'] != null) {
+            userId = data['id'].toString();
+          } else if (data['user'] != null) {
+            if (data['user'] is Map) {
+              final user = data['user'];
+              if (user['user_id'] != null) {
+                userId = user['user_id'].toString();
+              } else if (user['id'] != null) {
+                userId = user['id'].toString();
+              }
+            }
+          } else if (data['data'] != null) {
+            if (data['data'] is Map) {
+              final d = data['data'];
+              if (d['user_id'] != null) {
+                userId = d['user_id'].toString();
+              } else if (d['id'] != null) {
+                userId = d['id'].toString();
+              } else if (d['user'] != null && d['user'] is Map) {
+                final user = d['user'];
+                if (user['user_id'] != null) {
+                  userId = user['user_id'].toString();
+                } else if (user['id'] != null) {
+                  userId = user['id'].toString();
+                }
+              }
+            }
           }
 
           if (userId != null) {
@@ -90,6 +115,28 @@ class AuthService {
       return LoginStatus.network_error;
     } catch (e) {
       return LoginStatus.network_error;
+    }
+  }
+
+  Future<void> logout() async {
+    const storage = FlutterSecureStorage();
+    try {
+      final token = await storage.read(key: 'auth_token');
+      if (token != null) {
+        final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/logout');
+        await http.get(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
+      }
+    } catch (e) {
+      print('Logout API error: $e');
+    } finally {
+      await storage.delete(key: 'auth_token');
+      await storage.delete(key: 'user_id');
     }
   }
 }

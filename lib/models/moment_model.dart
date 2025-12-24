@@ -26,7 +26,7 @@ class MomentModel {
   factory MomentModel.fromJson(Map<String, dynamic> json) {
     String resolveUrl(String? url) {
       if (url == null || url.trim().isEmpty) return '';
-      final cleanUrl = url.trim().replaceAll('`', '');
+      final cleanUrl = url.trim().replaceAll('`', '').replaceAll('\\', '/');
       if (cleanUrl.startsWith('http')) return cleanUrl;
       if (cleanUrl.startsWith('/'))
         return 'https://demo.mazri-minecraft.xyz$cleanUrl';
@@ -51,7 +51,10 @@ class MomentModel {
   String get timeAgo {
     if (postCreatedAt.isEmpty) return '';
     try {
-      final dt = DateTime.parse(postCreatedAt);
+      final normalized = postCreatedAt.contains(' ')
+          ? postCreatedAt.replaceFirst(' ', 'T')
+          : postCreatedAt;
+      final dt = DateTime.parse(normalized);
       final diff = DateTime.now().difference(dt);
       if (diff.inDays > 0) return '${diff.inDays}d ago';
       if (diff.inHours > 0) return '${diff.inHours}h ago';

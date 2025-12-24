@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../themes/theme.dart';
 import '../../controllers/app/theme_controller.dart';
+import '../../services/auth_service.dart';
 import '../../routes.dart';
 
 class SettingsView extends StatelessWidget {
@@ -101,12 +102,16 @@ class SettingsView extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                           ),
-                          onPressed:
-                              () => Navigator.pushNamedAndRemoveUntil(
+                          onPressed: () async {
+                            await AuthService().logout();
+                            if (context.mounted) {
+                              Navigator.pushNamedAndRemoveUntil(
                                 context,
                                 AppRoutes.login,
                                 (route) => false,
-                              ),
+                              );
+                            }
+                          },
                           child: const Text('Log Out'),
                         ),
                       ),

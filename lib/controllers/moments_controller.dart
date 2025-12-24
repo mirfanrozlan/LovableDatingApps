@@ -44,24 +44,25 @@ class MomentsController extends ChangeNotifier {
         _moments = await _service.getFriendMoments();
       } else if (type == MomentsType.me) {
         if (_currentUserId != null) {
-          // Load profile and moments in parallel
-          final results = await Future.wait([
-            _service.getUserDetails(_currentUserId!),
-            _service.getMyMoments(),
-          ]);
-          _userProfile = results[0] as UserModel;
-          final rawMoments = results[1] as List<MomentModel>;
-
-          // Inject user info into moments since /api/getUserPost doesn't return it
-          final mapped = rawMoments
-              .map(
-                (m) => m.copyWith(
-                  userName: _userProfile!.name,
-                  userMedia: _userProfile!.media,
-                ),
-              )
-              .toList();
-          _moments = mapped;
+          try {
+            _userProfile = await _service.getUserDetails(_currentUserId!);
+          } catch (_) {
+            _userProfile = null;
+          }
+          try {
+            final rawMoments = await _service.getMyMoments();
+            final mapped = rawMoments
+                .map(
+                  (m) => m.copyWith(
+                    userName: _userProfile?.name ?? m.userName,
+                    userMedia: _userProfile?.media ?? m.userMedia,
+                  ),
+                )
+                .toList();
+            _moments = mapped;
+          } catch (e) {
+            throw e;
+          }
         } else {
           _moments = await _service.getMyMoments(); // This will throw if no ID
         }
@@ -100,6 +101,16 @@ class MomentsController extends ChangeNotifier {
         more = await _service.getFriendMoments();
       } else if (type == MomentsType.me) {
         more = await _service.getMyMoments();
+        if (_userProfile != null) {
+          more = more
+              .map(
+                (m) => m.copyWith(
+                  userName: _userProfile!.name,
+                  userMedia: _userProfile!.media,
+                ),
+              )
+              .toList();
+        }
       }
       final added = <MomentModel>[];
       for (final m in more) {
