@@ -12,16 +12,55 @@ class DiscoverController extends ChangeNotifier {
   bool _hasMore = true;
   final Set<int> _seenIds = {};
 
+  // Filters
+  int? _distance;
+  String? _gender;
+  int? _minAge;
+  int? _maxAge;
+
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
+  
+  int? get distance => _distance;
+  String? get gender => _gender;
+  int? get minAge => _minAge;
+  int? get maxAge => _maxAge;
+
+  void updateFilters({
+    int? distance,
+    String? gender,
+    int? minAge,
+    int? maxAge,
+  }) {
+    _distance = distance;
+    _gender = gender;
+    _minAge = minAge;
+    _maxAge = maxAge;
+    
+    // Reset pagination and reload
+    _page = 1;
+    _profiles = [];
+    _seenIds.clear();
+    _hasMore = true;
+    _swipeCount = 0;
+    notifyListeners();
+    loadProfiles();
+  }
 
   Future<void> loadProfiles() async {
     if (_loading) return;
     _loading = true;
     notifyListeners();
 
-    print('Discover: loading page=$_page limit=$_limit');
-    final newProfiles = await _service.getRandomPeople(page: _page, limit: _limit);
+    print('Discover: loading page=$_page limit=$_limit filters=(dist:$_distance, gender:$_gender, age:$_minAge-$_maxAge)');
+    final newProfiles = await _service.getRandomPeople(
+      page: _page, 
+      limit: _limit,
+      distance: _distance,
+      gender: _gender,
+      minAge: _minAge,
+      maxAge: _maxAge,
+    );
     print('Discover: received=${newProfiles.length} profiles from API');
     if (newProfiles.isNotEmpty) {
       final deduped = <DiscoverProfileModel>[];

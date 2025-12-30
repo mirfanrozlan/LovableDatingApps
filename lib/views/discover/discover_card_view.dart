@@ -28,7 +28,30 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     _controller.addListener(() {
       if (mounted) setState(() {});
     });
-    _controller.loadProfiles();
+    _initController();
+  }
+
+  Future<void> _initController() async {
+    final ms = MomentsService();
+    final userId = await ms.getCurrentUserId();
+    if (userId != null) {
+      final prefs = await AuthService().getPreferences(userId);
+      if (mounted && prefs != null) {
+        String? gender = prefs['pref_gender']?.toString();
+        int? minAge = int.tryParse(prefs['pref_age_min']?.toString() ?? '');
+        int? maxAge = int.tryParse(prefs['pref_age_max']?.toString() ?? '');
+        int? distance = int.tryParse(prefs['pref_location']?.toString() ?? '');
+
+        _controller.updateFilters(
+          gender: gender,
+          minAge: minAge,
+          maxAge: maxAge,
+          distance: distance,
+        );
+        return;
+      }
+    }
+    if (mounted) _controller.loadProfiles();
   }
 
   @override
@@ -49,15 +72,10 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF1a1a1a),
-                    const Color(0xFF0a0a0a),
-                  ]
-                : [
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFFDCFCE7),
-                  ],
+            colors:
+                isDark
+                    ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
+                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
           ),
         ),
         child: SafeArea(
@@ -70,18 +88,19 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                   _buildHeader(isDark),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: _controller.loading && _controller.profiles.isEmpty
-                        ? Center(
-                            child: CircularProgressIndicator(
-                              color: const Color(0xFF10B981),
-                            ),
-                          )
-                        : _controller.profiles.isEmpty
+                    child:
+                        _controller.loading && _controller.profiles.isEmpty
+                            ? Center(
+                              child: CircularProgressIndicator(
+                                color: const Color(0xFF10B981),
+                              ),
+                            )
+                            : _controller.profiles.isEmpty
                             ? _buildEmptyState(isDark)
                             : _CardStack(
-                                controller: _controller,
-                                isDark: isDark,
-                              ),
+                              controller: _controller,
+                              isDark: isDark,
+                            ),
                   ),
                 ],
               ),
@@ -105,11 +124,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.explore,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: const Icon(Icons.explore, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
             Text(
@@ -135,15 +150,18 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     if (userId == null) return;
     final prefs = await AuthService().getPreferences(userId);
     String gender = (prefs?['pref_gender'] ?? 'Male').toString();
-    int minAge = (prefs?['pref_age_min'] ?? 18) is int
-        ? (prefs?['pref_age_min'] ?? 18)
-        : int.tryParse((prefs?['pref_age_min'] ?? '18').toString()) ?? 18;
-    int maxAge = (prefs?['pref_age_max'] ?? 80) is int
-        ? (prefs?['pref_age_max'] ?? 80)
-        : int.tryParse((prefs?['pref_age_max'] ?? '80').toString()) ?? 80;
-    int distance = (prefs?['pref_location'] ?? 25) is int
-        ? (prefs?['pref_location'] ?? 25)
-        : int.tryParse((prefs?['pref_location'] ?? '25').toString()) ?? 25;
+    int minAge =
+        (prefs?['pref_age_min'] ?? 18) is int
+            ? (prefs?['pref_age_min'] ?? 18)
+            : int.tryParse((prefs?['pref_age_min'] ?? '18').toString()) ?? 18;
+    int maxAge =
+        (prefs?['pref_age_max'] ?? 80) is int
+            ? (prefs?['pref_age_max'] ?? 80)
+            : int.tryParse((prefs?['pref_age_max'] ?? '80').toString()) ?? 80;
+    int distance =
+        (prefs?['pref_location'] ?? 25) is int
+            ? (prefs?['pref_location'] ?? 25)
+            : int.tryParse((prefs?['pref_location'] ?? '25').toString()) ?? 25;
 
     if (!mounted) return;
     showModalBottomSheet(
@@ -154,121 +172,159 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
-        return StatefulBuilder(builder: (context, setState) {
-          return SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  20,
-                  16,
-                  16 + MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.tune, color: Color(0xFF10B981)),
-                        SizedBox(width: 8),
-                        Text('Discovery Preferences', style: TextStyle(fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Attracted To', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: ['Male', 'Female', 'Non-Binary'].map((g) {
-                        final selected = gender == g;
-                        return ChoiceChip(
-                          label: Text(g),
-                          selected: selected,
-                          selectedColor: const Color(0xFF10B981),
-                          labelStyle: TextStyle(color: selected ? Colors.white : Colors.black87),
-                          onSelected: (_) => setState(() => gender = g),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Age Range', style: TextStyle(fontWeight: FontWeight.w600)),
-                    RangeSlider(
-                      values: RangeValues(minAge.toDouble(), maxAge.toDouble()),
-                      min: 18,
-                      max: 100,
-                      divisions: 82,
-                      activeColor: const Color(0xFF10B981),
-                      onChanged: (v) {
-                        setState(() {
-                          minAge = v.start.round();
-                          maxAge = v.end.round();
-                        });
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Min: $minAge'),
-                        Text('Max: $maxAge'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Distance (km)', style: TextStyle(fontWeight: FontWeight.w600)),
-                    Slider(
-                      value: distance.toDouble(),
-                      min: 0,
-                      max: 100,
-                      divisions: 100,
-                      activeColor: const Color(0xFF10B981),
-                      onChanged: (v) => setState(() => distance = v.round()),
-                    ),
-                    Align(alignment: Alignment.centerRight, child: Text('$distance km')),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final ok = await AuthService().updateProfile(
-                          userId: userId,
-                          username: '',
-                          gender: '',
-                          age: 0,
-                          bio: '',
-                          education: '',
-                          address: '',
-                          postcode: '',
-                          state: '',
-                          city: '',
-                          country: '',
-                          interests: '',
-                          email: '',
-                          phone: '',
-                          prefGender: gender,
-                          prefAgeMin: minAge,
-                          prefAgeMax: maxAge,
-                          prefLocation: distance,
-                        );
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(ok ? 'Preferences updated' : 'Failed to update preferences')),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    20,
+                    16,
+                    16 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.tune, color: Color(0xFF10B981)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Discovery Preferences',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ],
                       ),
-                      child: const Text('Save Preferences'),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Attracted To',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children:
+                            ['Male', 'Female', 'Non-Binary'].map((g) {
+                              final selected = gender == g;
+                              return ChoiceChip(
+                                label: Text(g),
+                                selected: selected,
+                                selectedColor: const Color(0xFF10B981),
+                                labelStyle: TextStyle(
+                                  color:
+                                      selected ? Colors.white : Colors.black87,
+                                ),
+                                onSelected: (_) => setState(() => gender = g),
+                              );
+                            }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Age Range',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      RangeSlider(
+                        values: RangeValues(
+                          minAge.toDouble(),
+                          maxAge.toDouble(),
+                        ),
+                        min: 18,
+                        max: 100,
+                        divisions: 82,
+                        activeColor: const Color(0xFF10B981),
+                        onChanged: (v) {
+                          setState(() {
+                            minAge = v.start.round();
+                            maxAge = v.end.round();
+                          });
+                        },
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [Text('Min: $minAge'), Text('Max: $maxAge')],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Distance (km)',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Slider(
+                        value: distance.toDouble(),
+                        min: 0,
+                        max: 100,
+                        divisions: 100,
+                        activeColor: const Color(0xFF10B981),
+                        onChanged: (v) => setState(() => distance = v.round()),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text('$distance km'),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final ok = await AuthService().updateProfile(
+                            userId: userId,
+                            username: '',
+                            gender: '',
+                            age: 0,
+                            bio: '',
+                            education: '',
+                            address: '',
+                            postcode: '',
+                            state: '',
+                            city: '',
+                            country: '',
+                            interests: '',
+                            email: '',
+                            phone: '',
+                            prefGender: gender,
+                            prefAgeMin: minAge,
+                            prefAgeMax: maxAge,
+                            prefLocation: distance,
+                          );
+                          if (mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ok
+                                      ? 'Preferences updated'
+                                      : 'Failed to update preferences',
+                                ),
+                              ),
+                            );
+                            if (ok) {
+                              _controller.updateFilters(
+                                gender: gender,
+                                minAge: minAge,
+                                maxAge: maxAge,
+                                distance: distance,
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Save Preferences'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
+
   Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
@@ -330,14 +386,12 @@ class _PreferencesIconButton extends StatelessWidget {
     );
   }
 }
+
 class _CardStack extends StatefulWidget {
   final DiscoverController controller;
   final bool isDark;
 
-  const _CardStack({
-    required this.controller,
-    required this.isDark,
-  });
+  const _CardStack({required this.controller, required this.isDark});
 
   @override
   State<_CardStack> createState() => _CardStackState();
@@ -640,27 +694,36 @@ class _SingleCard extends StatelessWidget {
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
-                child: p.media.isNotEmpty
-                    ? Image.network(
-                        p.media,
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => Container(
-                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
+                child:
+                    p.media.isNotEmpty
+                        ? Image.network(
+                          p.media,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (ctx, err, stack) => Container(
+                                color:
+                                    isDark
+                                        ? const Color(0xFF2A2A2A)
+                                        : const Color(0xFFE5E7EB),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 100,
+                                  color:
+                                      isDark ? Colors.white24 : Colors.black26,
+                                ),
+                              ),
+                        )
+                        : Container(
+                          color:
+                              isDark
+                                  ? const Color(0xFF2A2A2A)
+                                  : const Color(0xFFE5E7EB),
                           child: Icon(
                             Icons.person,
                             size: 100,
                             color: isDark ? Colors.white24 : Colors.black26,
                           ),
                         ),
-                      )
-                    : Container(
-                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
-                        child: Icon(
-                          Icons.person,
-                          size: 100,
-                          color: isDark ? Colors.white24 : Colors.black26,
-                        ),
-                      ),
               ),
             ),
             // Gradient Overlay
@@ -704,7 +767,8 @@ class _SingleCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (p.subscription == 'premium' || p.subscription == 'plus')
+                      if (p.subscription == 'premium' ||
+                          p.subscription == 'plus')
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -762,30 +826,31 @@ class _SingleCard extends StatelessWidget {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: p.interests.take(3).map((interest) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            interest,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                      children:
+                          p.interests.take(3).map((interest) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                interest,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -804,11 +869,12 @@ class _SingleCard extends StatelessWidget {
                           icon: Icons.info_outline,
                           color: Colors.white,
                           size: 20,
-                          onPressed: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.discoverDetail,
-                            arguments: p,
-                          ),
+                          onPressed:
+                              () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.discoverDetail,
+                                arguments: p,
+                              ),
                         ),
                         const SizedBox(width: 16),
                         _ActionButton(
@@ -854,10 +920,7 @@ class _ActionButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.white.withOpacity(0.15),
-            border: Border.all(
-              color: color.withOpacity(0.7),
-              width: 1.5,
-            ),
+            border: Border.all(color: color.withOpacity(0.7), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.25),
