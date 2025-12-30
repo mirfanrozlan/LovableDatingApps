@@ -115,6 +115,14 @@ class MessagesController extends ChangeNotifier {
     }
   }
 
+  Future<void> setTyping(String chatId, bool typing) async {
+    final userId = int.tryParse(chatId);
+    if (userId == null) return;
+    try {
+      await _service.setTyping(userId, typing);
+    } catch (_) {}
+  }
+
   void _addMessageToCache(String chatId, MessageModel msg) {
     if (_conversations.containsKey(chatId)) {
       _conversations[chatId]!.add(msg);

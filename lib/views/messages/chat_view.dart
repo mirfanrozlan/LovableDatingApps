@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../widgets/messages/message_bubble.dart';
@@ -18,6 +19,7 @@ class _ChatViewState extends State<ChatView> {
   late final MessagesController _controller;
   final _input = TextEditingController();
   String? _chatId;
+  Timer? _typingTimer;
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _ChatViewState extends State<ChatView> {
   void dispose() {
     _controller.dispose();
     _input.dispose();
+    _typingTimer?.cancel();
     super.dispose();
   }
 
@@ -49,6 +52,8 @@ class _ChatViewState extends State<ChatView> {
 
     _controller.sendMessage(_chatId!, text);
     _input.clear();
+    _typingTimer?.cancel();
+    _controller.setTyping(_chatId!, false);
   }
 
   @override
@@ -157,6 +162,16 @@ class _ChatViewState extends State<ChatView> {
                             hintText: 'Type a message...',
                             border: InputBorder.none,
                           ),
+                          onChanged: (_) {
+                            if (_chatId == null) return;
+                            _controller.setTyping(_chatId!, true);
+                            _typingTimer?.cancel();
+                            _typingTimer = Timer(const Duration(seconds: 2), () {
+                              if (_chatId != null) {
+                                _controller.setTyping(_chatId!, false);
+                              }
+                            });
+                          },
                           onSubmitted: (_) => _sendMessage(),
                         ),
                       ),

@@ -136,4 +136,29 @@ class MessagesService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> setTyping(int receiverId, bool typing) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return null;
+
+      final uri = Uri.https(_authority, '/api/chat/typing');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'receiver_id': receiverId, 'typing': typing}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Error setting typing to $typing for $receiverId: $e');
+      return null;
+    }
+  }
 }
