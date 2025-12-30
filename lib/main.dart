@@ -22,7 +22,7 @@ class LoveConnectApp extends StatelessWidget {
           darkTheme: AppTheme.dark,
           themeMode: theme.mode,
           routes: AppRoutes.routes,
-          initialRoute: AppRoutes.login,
+          initialRoute: AppRoutes.splash,
         );
       },
     );

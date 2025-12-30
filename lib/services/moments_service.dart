@@ -327,10 +327,7 @@ class MomentsService {
   Future<CommentModel> likeComment(int commentId) async {
     try {
       final token = await _storage.read(key: 'auth_token');
-      final headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+      final headers = {'Accept': 'application/json'};
 
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
@@ -341,7 +338,6 @@ class MomentsService {
 
       if (response.statusCode == 200) {
         final dynamic decoded = json.decode(response.body);
-        // Note: The response might not have user details, so we trust the caller to merge/handle it.
         return CommentModel.fromJson(decoded);
       } else {
         throw Exception('Failed to like comment: ${response.statusCode}');

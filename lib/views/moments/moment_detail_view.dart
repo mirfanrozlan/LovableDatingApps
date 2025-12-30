@@ -221,6 +221,37 @@ class _MomentDetailViewState extends State<MomentDetailView> {
     );
   }
 
+  Future<void> _likeComment(CommentModel comment) async {
+    // Optimistic update
+    final wasLiked = comment.likedByMe;
+    setState(() {
+      final index = _comments.indexWhere((c) => c.comsId == comment.comsId);
+      if (index != -1) {
+        _comments[index] = comment.copyWith(
+          likedByMe: !wasLiked,
+          likes: comment.likes + (wasLiked ? -1 : 1),
+        );
+      }
+    });
+
+    try {
+      await widget.controller.likeComment(comment.comsId);
+    } catch (e) {
+      // Revert if failed
+      if (mounted) {
+        setState(() {
+          final index = _comments.indexWhere((c) => c.comsId == comment.comsId);
+          if (index != -1) {
+            _comments[index] = comment;
+          }
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to like comment')));
+      }
+    }
+  }
+
   Widget _buildCommentItem(CommentModel comment) {
     final isMyComment =
         widget.controller.currentUserId != null &&
@@ -284,27 +315,33 @@ class _MomentDetailViewState extends State<MomentDetailView> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Like comment placeholder - logic can be added later if needed
-                    Icon(
-                      comment.likedByMe
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      size: 14,
-                      color:
-                          comment.likedByMe
-                              ? const Color(0xFF10B981)
-                              : Colors.grey,
-                    ),
-                    if (comment.likes > 0) ...[
-                      const SizedBox(width: 4),
-                      Text(
-                        '${comment.likes}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                    GestureDetector(
+                      onTap: () => _likeComment(comment),
+                      child: Row(
+                        children: [
+                          Icon(
+                            comment.likedByMe
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 14,
+                            color:
+                                comment.likedByMe
+                                    ? const Color(0xFF10B981)
+                                    : Colors.grey,
+                          ),
+                          if (comment.likes > 0) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '${comment.likes}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],

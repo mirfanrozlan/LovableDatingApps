@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'views/splash_screen.dart';
 import 'views/auth/login_view.dart';
 import 'views/auth/forgot_password_view.dart';
 import 'views/auth/register_view.dart';
@@ -45,8 +46,10 @@ class AppRoutes {
   static const preferences = '/preferences';
   static const home = '/home';
   static const userProfile = '/user-profile';
+  static const splash = '/splash';
 
   static Map<String, WidgetBuilder> get routes => {
+    splash: (_) => const SplashScreen(),
     login: (_) => const LoginView(),
     forgot: (_) => const ForgotPasswordView(),
     register: (_) => const RegisterView(),

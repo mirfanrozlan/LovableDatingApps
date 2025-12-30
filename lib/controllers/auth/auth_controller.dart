@@ -14,7 +14,7 @@ class AuthController {
     final status = await _service.login(form.email, form.password);
     if (status == LoginStatus.success) {
       messenger.showSnackBar(const SnackBar(content: Text('Signed in')));
-      navigator.pushNamedAndRemoveUntil(AppRoutes.discover, (route) => false);
+      navigator.pushNamedAndRemoveUntil(AppRoutes.messages, (route) => false);
     } else {
       String msg = 'Login failed';
       if (status == LoginStatus.invalid_credentials) {
