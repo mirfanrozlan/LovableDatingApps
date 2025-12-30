@@ -26,8 +26,8 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (token != null) {
-      // Token exists, navigate to chat/messages by default
-      Navigator.pushReplacementNamed(context, AppRoutes.messages);
+      // Token exists, navigate to discover by default
+      Navigator.pushReplacementNamed(context, AppRoutes.discover);
     } else {
       // No token, navigate to login
       Navigator.pushReplacementNamed(context, AppRoutes.login);

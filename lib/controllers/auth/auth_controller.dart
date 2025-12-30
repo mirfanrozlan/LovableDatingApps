@@ -14,7 +14,7 @@ class AuthController {
     final status = await _service.login(form.email, form.password);
     if (status == LoginStatus.success) {
       messenger.showSnackBar(const SnackBar(content: Text('Signed in')));
-      navigator.pushNamedAndRemoveUntil(AppRoutes.messages, (route) => false);
+      navigator.pushNamedAndRemoveUntil(AppRoutes.discover, (route) => false);
     } else {
       String msg = 'Login failed';
       if (status == LoginStatus.invalid_credentials) {
@@ -47,7 +47,9 @@ class AuthController {
     if (success) {
       messenger.showSnackBar(const SnackBar(content: Text('OTP sent')));
     } else {
-      messenger.showSnackBar(const SnackBar(content: Text('Failed to send OTP')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Failed to send OTP')),
+      );
     }
     return success;
   }
@@ -63,15 +65,24 @@ class AuthController {
     return success;
   }
 
-  Future<bool> resetPassword(BuildContext context, String email, String otp, String newPassword) async {
+  Future<bool> resetPassword(
+    BuildContext context,
+    String email,
+    String otp,
+    String newPassword,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final success = await _service.resetPassword(email, otp, newPassword);
     if (success) {
-      messenger.showSnackBar(const SnackBar(content: Text('Password reset successful')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Password reset successful')),
+      );
       navigator.pop(); // Go back to login
     } else {
-      messenger.showSnackBar(const SnackBar(content: Text('Failed to reset password')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Failed to reset password')),
+      );
     }
     return success;
   }
