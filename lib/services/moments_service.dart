@@ -14,10 +14,7 @@ class MomentsService {
   Future<bool> createPost(String content, File? imageFile) async {
     try {
       final token = await _storage.read(key: 'auth_token');
-      final headers = {
-        'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json',
-      };
+      final headers = {'Accept': 'application/json'};
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -34,6 +31,9 @@ class MomentsService {
             imageFile.path,
           ),
         );
+      } else {
+        request.fields['post_media'] =
+            ' '; // Send a space to bypass "cannot be null"
       }
 
       final streamedResponse = await request.send();

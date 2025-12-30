@@ -51,9 +51,10 @@ class MomentModel {
   String get timeAgo {
     if (postCreatedAt.isEmpty) return '';
     try {
-      final normalized = postCreatedAt.contains(' ')
-          ? postCreatedAt.replaceFirst(' ', 'T')
-          : postCreatedAt;
+      final normalized =
+          postCreatedAt.contains(' ')
+              ? postCreatedAt.replaceFirst(' ', 'T')
+              : postCreatedAt;
       final dt = DateTime.parse(normalized);
       final diff = DateTime.now().difference(dt);
       if (diff.inDays > 0) return '${diff.inDays}d ago';

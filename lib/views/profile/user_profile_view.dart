@@ -95,6 +95,7 @@ class _UserProfileViewState extends State<UserProfileView> {
                                   onDeletePost: (postId) => _controller.deletePost(postId),
                                   currentUserId: _controller.currentUserId,
                                   flat: true,
+                                  controller: _controller,
                                 ),
                                 const SizedBox(height: 12),
                               ],

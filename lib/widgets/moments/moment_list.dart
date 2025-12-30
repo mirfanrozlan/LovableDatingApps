@@ -73,6 +73,7 @@ class MomentList extends StatelessWidget {
                 ),
                 onDeletePost: (postId) => controller.deletePost(postId),
                 currentUserId: controller.currentUserId,
+                controller: controller,
               );
             },
           ),

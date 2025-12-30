@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/moment_model.dart';
 import '../../models/comment_model.dart';
 import '../../themes/theme.dart';
+import '../../controllers/moments_controller.dart';
+import '../../views/moments/moment_detail_view.dart';
 
 class MomentCard extends StatefulWidget {
   final MomentModel post;
@@ -14,6 +16,8 @@ class MomentCard extends StatefulWidget {
   final Future<bool> Function(int) onDeletePost;
   final int? currentUserId;
   final bool flat;
+  final bool isDetailView;
+  final MomentsController? controller;
 
   const MomentCard({
     super.key,
@@ -26,6 +30,8 @@ class MomentCard extends StatefulWidget {
     required this.onDeletePost,
     this.currentUserId,
     this.flat = false,
+    this.isDetailView = false,
+    this.controller,
   });
 
   @override
@@ -33,129 +39,23 @@ class MomentCard extends StatefulWidget {
 }
 
 class _MomentCardState extends State<MomentCard> {
-  bool _showComments = false;
-  final _input = TextEditingController();
-  final _focusNode = FocusNode();
-  List<CommentModel> _comments = [];
-  bool _loadingComments = false;
-  bool _submittingComment = false;
-  CommentModel? _replyingTo;
   bool _likedPostByMe = false;
 
   @override
-  void dispose() {
-    _input.dispose();
-    _focusNode.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // Initialize liked state if available in model (model doesn't have likedByMe yet, assuming handled by parent or local toggle)
+    // The current model doesn't seem to have 'likedByMe'. The old code managed it locally via `_likedPostByMe`.
+    // We'll stick to local toggle for immediate feedback.
   }
 
-  void _startReply(CommentModel comment) {
-    setState(() {
-      _replyingTo = comment;
-      _input.text = '@${comment.userName} ';
-      _input.selection = TextSelection.fromPosition(
-        TextPosition(offset: _input.text.length),
-      );
-    });
-    _focusNode.requestFocus();
-  }
-
-  void _cancelReply() {
-    setState(() {
-      _replyingTo = null;
-      _input.clear();
-    });
-    _focusNode.unfocus();
-  }
-
-  void _toggleComments() {
-    setState(() {
-      _showComments = !_showComments;
-    });
-    if (_showComments && _comments.isEmpty) {
-      _loadComments();
-    }
-  }
-
-  Future<void> _loadComments() async {
-    if (_loadingComments) return;
-    setState(() => _loadingComments = true);
-    try {
-      final comments = await widget.onLoadComments();
-      if (mounted) {
-        setState(() {
-          _comments = comments;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _loadingComments = false);
-      }
-    }
-  }
-
-  Future<void> _submitComment() async {
-    final content = _input.text.trim();
-    if (content.isEmpty || _submittingComment) return;
-
-    setState(() => _submittingComment = true);
-    try {
-      int? parentId;
-      int? replyId;
-      if (_replyingTo != null) {
-        parentId = _replyingTo!.comsId;
-        replyId = _replyingTo!.publishId;
-      }
-
-      final newComment = await widget.onAddComment(
-        content,
-        parentId: parentId,
-        replyId: replyId,
-      );
-
-      if (newComment != null && mounted) {
-        _input.clear();
-        setState(() {
-          _replyingTo = null;
-          // If we have user info from the controller (via parent), we could inject it here.
-          // For now, if the API doesn't return user info, we might need to rely on what we have.
-          // Or assume the API returns the full comment object including user details.
-
-          // Check if we need to inject current user info if it's missing from response
-          // This depends on what the API returns in newComment
-          _comments.add(newComment);
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _submittingComment = false);
-      }
-    }
-  }
-
-  Future<void> _likeComment(int commentId) async {
-    final index = _comments.indexWhere((c) => c.comsId == commentId);
-    if (index == -1) return;
-    if (_comments[index].likedByMe) return;
-    final updatedComment = await widget.onLikeComment(commentId);
-    if (updatedComment == null || !mounted) return;
-    setState(() {
-      _comments[index] = _comments[index].copyWith(
-        likes: updatedComment.likes,
-        likedByMe: true,
-      );
-    });
-  }
-
-  Future<void> _deleteComment(int commentId) async {
+  Future<void> _deletePost() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Delete Comment'),
-            content: const Text(
-              'Are you sure you want to delete this comment?',
-            ),
+            title: const Text('Delete Post'),
+            content: const Text('Are you sure you want to delete this post?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -169,450 +69,200 @@ class _MomentCardState extends State<MomentCard> {
             ],
           ),
     );
-
-    if (confirmed == true) {
-      final success = await widget.onDeleteComment(commentId);
-      if (success && mounted) {
-        setState(() {
-          _comments.removeWhere((c) => c.comsId == commentId);
-        });
-      }
-    }
-  }
-
-  Future<void> _deletePost() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Post'),
-        content: const Text('Are you sure you want to delete this post?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
     if (confirmed == true) {
       final success = await widget.onDeletePost(widget.post.postId);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post deleted')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete post')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Post deleted')));
       }
     }
   }
 
-  Widget _buildCommentItem(CommentModel comment) {
-    return GestureDetector(
-      onLongPress: () => _deleteComment(comment.comsId),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundImage:
-                  comment.userMedia.isNotEmpty
-                      ? NetworkImage(comment.userMedia)
-                      : null,
-              child:
-                  comment.userMedia.isEmpty
-                      ? Text(
-                        comment.initials,
-                        style: const TextStyle(fontSize: 10),
-                      )
-                      : null,
+  void _navigateToDetail() {
+    if (widget.isDetailView || widget.controller == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => MomentDetailView(
+              post: widget.post,
+              controller: widget.controller!,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        comment.userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        comment.timeAgo,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (widget.currentUserId != null &&
-                          widget.currentUserId == comment.publishId)
-                        GestureDetector(
-                          onTap: () => _deleteComment(comment.comsId),
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.delete,
-                              size: 18,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(comment.content, style: const TextStyle(fontSize: 14)),
-                ],
-              ),
-            ),
-            Column(
-              children: [
-                GestureDetector(
-                  onTap: () => _likeComment(comment.comsId),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: Icon(
-                      comment.likedByMe ? Icons.favorite : Icons.favorite_border,
-                      key: ValueKey<bool>(comment.likedByMe),
-                      size: 18,
-                      color:
-                          comment.likedByMe ? const Color(0xFF10B981) : Colors.grey,
-                    ),
-                  ),
-                ),
-                if (comment.likes > 0)
-                  Text(
-                    '${comment.likes}',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => _startReply(comment),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.reply,
-                      size: 18,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
-    );
-  }
-
-  Widget _buildCommentList() {
-    if (_loadingComments) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
-    if (_comments.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Text('No comments yet.', style: TextStyle(color: Colors.grey)),
-      );
-    }
-
-    // Identify roots and group children
-    final roots =
-        _comments.where((c) => c.parentId == null || c.parentId == 0).toList();
-
-    // Handle orphans: comments that have a parentId but the parent is not in the list
-    // This ensures we don't lose comments if the parent is missing
-    final allIds = _comments.map((c) => c.comsId).toSet();
-    final orphans =
-        _comments
-            .where(
-              (c) =>
-                  c.parentId != null &&
-                  c.parentId != 0 &&
-                  !allIds.contains(c.parentId),
-            )
-            .toList();
-
-    roots.addAll(orphans);
-
-    final byParent = <int, List<CommentModel>>{};
-    for (var c in _comments) {
-      if (c.parentId != null &&
-          c.parentId != 0 &&
-          allIds.contains(c.parentId)) {
-        byParent.putIfAbsent(c.parentId!, () => []).add(c);
-      }
-    }
-
-    return Column(
-      children: roots.map((root) => _buildCommentNode(root, byParent)).toList(),
-    );
-  }
-
-  Widget _buildCommentNode(
-    CommentModel comment,
-    Map<int, List<CommentModel>> byParent, {
-    int depth = 0,
-  }) {
-    final children = byParent[comment.comsId] ?? [];
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(left: depth * 24.0),
-          child: _buildCommentItem(comment),
-        ),
-        if (children.isNotEmpty)
-          ...children.map(
-            (child) => _buildCommentNode(child, byParent, depth: depth + 1),
-          ),
-      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
-    return Material(
-      color: Colors.white,
-      borderRadius: widget.flat ? BorderRadius.zero : BorderRadius.circular(16),
-      elevation: widget.flat ? 0 : 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            leading: CircleAvatar(
-              backgroundImage:
-                  post.userMedia.isNotEmpty
-                      ? NetworkImage(post.userMedia)
-                      : null,
-              child: post.userMedia.isEmpty ? Text(post.initials) : null,
-            ),
-            title: Text(
-              post.userName,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(post.timeAgo),
-            trailing: widget.currentUserId != null &&
-                    widget.currentUserId == post.userId
-                ? PopupMenuButton<int>(
-                    icon: const Icon(Icons.more_vert, color: Colors.black87),
-                    onSelected: (value) {
-                      if (value == 1) _deletePost();
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem<int>(
-                        value: 1,
-                        child: Row(
-                          children: const [
-                            Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                            SizedBox(width: 8),
-                            Text('Delete post'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : null,
-          ),
-          if (post.postCaption.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(post.postCaption),
-            ),
-          const SizedBox(height: 8),
-          if (post.postMedia.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Image.network(
-                post.postMedia,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: 300,
-                errorBuilder:
-                    (ctx, err, stack) => Container(
-                      height: 200,
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      ),
-                    ),
-              ),
-            ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
+    return InkWell(
+      onTap: _navigateToDetail,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border:
+              widget.flat
+                  ? null
+                  : Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Column: Avatar
+            Column(
               children: [
-                GestureDetector(
-                  onTap: () {
-                    if (_likedPostByMe) return;
-                    setState(() => _likedPostByMe = true);
-                    widget.onLike();
-                  },
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: Icon(
-                      _likedPostByMe ? Icons.favorite : Icons.favorite_border,
-                      key: ValueKey<bool>(_likedPostByMe),
-                      size: 22,
-                      color:
-                          _likedPostByMe ? const Color(0xFF10B981) : Colors.black87,
-                    ),
-                  ),
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage:
+                      post.userMedia.isNotEmpty
+                          ? NetworkImage(post.userMedia)
+                          : null,
+                  child: post.userMedia.isEmpty ? Text(post.initials) : null,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  '${post.postLikes}',
-                  style: TextStyle(color: Colors.black.withOpacity(0.6)),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _toggleComments,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: Icon(
-                      _showComments
-                          ? Icons.mode_comment
-                          : Icons.mode_comment_outlined,
-                      key: ValueKey<bool>(_showComments),
-                      color: _showComments ? AppTheme.primary : Colors.black87,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${post.commentsCount}',
-                  style: TextStyle(
-                    color: _showComments
-                        ? AppTheme.primary
-                        : Colors.black.withOpacity(0.6),
-                  ),
-                ),
+                // Could add a vertical line here if it was a thread chain
               ],
             ),
-          ),
-          AnimatedCrossFade(
-            crossFadeState:
-                _showComments
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-            firstChild: const SizedBox(height: 0),
-            secondChild: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            const SizedBox(width: 12),
+            // Right Column: Content
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCommentList(),
-
-                  const Divider(),
-                  if (_replyingTo != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Replying to ${_replyingTo!.userName}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: _cancelReply,
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // Header: Name, Time, More
                   Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _input,
-                          focusNode: _focusNode,
-                          decoration: const InputDecoration(
-                            hintText: 'Add a comment...',
-                            border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.all(Radius.circular(12))),
-                            fillColor: Color(0xFFF3F4F6),
-                            filled: true,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                          ),
+                      Text(
+                        post.userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
                         ),
                       ),
-                      IconButton(
-                        onPressed: _submitComment,
-                        icon:
-                            _submittingComment
-                                ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                      const SizedBox(width: 6),
+                      Text(
+                        post.timeAgo,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (widget.currentUserId != null &&
+                          widget.currentUserId == post.userId)
+                        GestureDetector(
+                          onTap: _deletePost,
+                          child: const Icon(
+                            Icons.more_horiz,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Content Text
+                  if (post.postCaption.isNotEmpty)
+                    Text(
+                      post.postCaption,
+                      style: const TextStyle(fontSize: 15, height: 1.3),
+                    ),
+                  // Content Image
+                  if (post.postMedia.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(
+                        constraints:
+                            widget.isDetailView
+                                ? const BoxConstraints()
+                                : const BoxConstraints(maxHeight: 300),
+                        child: Image.network(
+                          post.postMedia,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder:
+                              (ctx, err, stack) => Container(
+                                height: 150,
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.grey,
                                   ),
-                                )
-                                : const Icon(Icons.send, color: AppTheme.primary),
+                                ),
+                              ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  // Action Row
+                  Row(
+                    children: [
+                      // Like
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _likedPostByMe = !_likedPostByMe);
+                          widget.onLike();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(
+                              _likedPostByMe
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              size: 20,
+                              color:
+                                  _likedPostByMe
+                                      ? const Color(0xFF10B981)
+                                      : Colors.black54,
+                            ),
+                            if (post.postLikes > 0 || _likedPostByMe) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '${post.postLikes + (_likedPostByMe ? 1 : 0)}', // Basic optimistic update visualization
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      // Comment
+                      GestureDetector(
+                        onTap: _navigateToDetail,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.chat_bubble_outline,
+                              size: 20,
+                              color: Colors.black54,
+                            ),
+                            if (post.commentsCount > 0) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '${post.commentsCount}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
