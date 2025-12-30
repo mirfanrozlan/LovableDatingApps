@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../widgets/common/app_scaffold.dart';
-import '../../widgets/common/app_card.dart';
-import '../../widgets/common/primary_button.dart';
-import '../../widgets/common/text_input.dart';
 import '../../controllers/auth/auth_controller.dart';
-import '../../themes/theme.dart';
 import '../../routes.dart';
+
+enum ResetStep { email, otp, newPassword }
 
 class ForgotPasswordView extends StatefulWidget {
   const ForgotPasswordView({super.key});
@@ -17,12 +15,21 @@ class ForgotPasswordView extends StatefulWidget {
 class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
+  final _otp = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _controller = AuthController();
+  
+  ResetStep _step = ResetStep.email;
   bool _isLoading = false;
+  bool _obscurePasswords = true;
 
   @override
   void dispose() {
     _email.dispose();
+    _otp.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -60,7 +67,15 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       Icons.arrow_back,
                       color: isDark ? Colors.white : const Color(0xFF1a1a1a),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      if (_step == ResetStep.email) {
+                        Navigator.pop(context);
+                      } else if (_step == ResetStep.otp) {
+                        setState(() => _step = ResetStep.email);
+                      } else {
+                        setState(() => _step = ResetStep.otp);
+                      }
+                    },
                   ),
                 ),
               ),
@@ -90,6 +105,17 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   }
 
   Widget _buildHeader(bool isDark) {
+    String title = 'Forgot Password?';
+    String subtitle = 'ENTER YOUR EMAIL TO RESET PASSWORD';
+    
+    if (_step == ResetStep.otp) {
+        title = 'Enter OTP';
+        subtitle = 'ENTER THE OTP SENT TO YOUR EMAIL';
+    } else if (_step == ResetStep.newPassword) {
+        title = 'Reset Password';
+        subtitle = 'ENTER YOUR NEW PASSWORD';
+    }
+
     return Column(
       children: [
         Container(
@@ -112,15 +138,15 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.lock_reset,
+          child: Icon(
+            _step == ResetStep.newPassword ? Icons.lock_open : Icons.lock_reset,
             size: 48,
             color: Colors.white,
           ),
         ),
         const SizedBox(height: 32),
         Text(
-          'Forgot Password?',
+          title,
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.bold,
@@ -130,7 +156,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         ),
         const SizedBox(height: 8),
         Text(
-          'ENTER YOUR EMAIL TO RESET PASSWORD',
+          subtitle,
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,
@@ -166,7 +192,11 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                "No worries! We'll send you reset instructions.",
+                _step == ResetStep.email 
+                    ? "No worries! We'll send you reset instructions."
+                    : (_step == ResetStep.otp 
+                        ? "Please enter the verification code sent to your email."
+                        : "Create a new strong password for your account."),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -176,14 +206,68 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       : const Color(0xFF666666),
                 ),
               ),
+              
               const SizedBox(height: 32),
               
-              _buildTextField(
-                controller: _email,
-                hint: 'your@email.com',
-                icon: Icons.email_outlined,
-                isDark: isDark,
-              ),
+              if (_step == ResetStep.email)
+                  _buildTextField(
+                    controller: _email,
+                    hint: 'your@email.com',
+                    icon: Icons.email_outlined,
+                    isDark: isDark,
+                  ),
+
+              if (_step == ResetStep.otp)
+                  _buildTextField(
+                    controller: _otp,
+                    hint: 'Enter OTP',
+                    icon: Icons.pin_invoke,
+                    isDark: isDark,
+                  ),
+
+              if (_step == ResetStep.newPassword)
+                  _buildTextField(
+                    controller: _newPassword,
+                    hint: 'New Password',
+                    icon: Icons.lock_outline,
+                    isDark: isDark,
+                    isPassword: true,
+                    obscureOverride: _obscurePasswords,
+                    label: 'New Password',
+                    trailing: IconButton(
+                      icon: Icon(
+                        _obscurePasswords ? Icons.visibility_off : Icons.visibility,
+                        color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePasswords = !_obscurePasswords);
+                      },
+                    ),
+                  ),
+              
+              if (_step == ResetStep.newPassword)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _buildTextField(
+                      controller: _confirmPassword,
+                      hint: 'Confirm Password',
+                      icon: Icons.lock_outline,
+                      isDark: isDark,
+                      isPassword: true,
+                      obscureOverride: _obscurePasswords,
+                      label: 'Confirm Password',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'This field is required';
+                        }
+                        if (value != _newPassword.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
               
               const SizedBox(height: 32),
               
@@ -191,7 +275,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               
               const SizedBox(height: 32),
               
-              _buildBackToLoginLink(isDark),
+              if (_step == ResetStep.email)
+                _buildBackToLoginLink(isDark),
             ],
           ),
         ),
@@ -204,8 +289,13 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
     required String hint,
     required IconData icon,
     required bool isDark,
+    bool isPassword = false,
+    bool? obscureOverride,
+    Widget? trailing,
+    String? Function(String?)? validator,
+    String? label,
   }) {
-    return Container(
+    final field = Container(
       height: 56,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
@@ -230,13 +320,20 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
             ),
           ),
           Expanded(
-            child: TextField(
+            child: TextFormField(
               controller: controller,
-              keyboardType: TextInputType.emailAddress,
+              obscureText: isPassword ? (obscureOverride ?? true) : false,
+              keyboardType: isPassword ? TextInputType.text : (hint.contains('OTP') ? TextInputType.number : TextInputType.emailAddress),
               style: TextStyle(
                 fontSize: 15,
                 color: isDark ? Colors.white : const Color(0xFF1a1a1a),
               ),
+              validator: validator ?? (value) {
+                if (value == null || value.isEmpty) {
+                  return 'This field is required';
+                }
+                return null;
+              },
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: TextStyle(
@@ -249,12 +346,40 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               ),
             ),
           ),
+          if (trailing != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: trailing,
+            ),
         ],
       ),
     );
+    if (label != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white.withOpacity(0.85) : const Color(0xFF333333),
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          field,
+        ],
+      );
+    }
+    return field;
   }
 
   Widget _buildResetButton(bool isDark) {
+    String label = 'Send Reset Link';
+    if (_step == ResetStep.otp) label = 'Verify OTP';
+    if (_step == ResetStep.newPassword) label = 'Reset Password';
+
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -279,7 +404,22 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
           onTap: _isLoading ? null : () async {
             if (_formKey.currentState?.validate() ?? false) {
               setState(() => _isLoading = true);
-              await _controller.sendReset(context, _email.text);
+              bool success = false;
+              
+              if (_step == ResetStep.email) {
+                  success = await _controller.sendOtp(context, _email.text);
+                  if (success && mounted) {
+                      setState(() => _step = ResetStep.otp);
+                  }
+              } else if (_step == ResetStep.otp) {
+                  success = await _controller.verifyOtp(context, _email.text, _otp.text);
+                  if (success && mounted) {
+                      setState(() => _step = ResetStep.newPassword);
+                  }
+              } else if (_step == ResetStep.newPassword) {
+                  success = await _controller.resetPassword(context, _email.text, _otp.text, _newPassword.text);
+              }
+
               if (mounted) setState(() => _isLoading = false);
             }
           },
@@ -294,9 +434,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text(
-                    'Send Reset Link',
-                    style: TextStyle(
+                : Text(
+                    label,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

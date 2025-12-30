@@ -6,8 +6,60 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 
 class AuthService {
+  Future<bool> sendResetOtp(String email) async {
+    try {
+      final response = await http.post(
+        Uri.https('demo.mazri-minecraft.xyz', '/api/forgot/send-otp'),
+        body: {'email': email},
+      );
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Send OTP error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> verifyResetOtp(String email, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.https('demo.mazri-minecraft.xyz', '/api/forgot/verify-otp'),
+        body: {'email': email, 'otp': otp},
+      );
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Verify OTP error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword(String email, String otp, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.https('demo.mazri-minecraft.xyz', '/api/forgot/reset'),
+        body: {
+          'email': email,
+          'otp': otp,
+          'new_password': newPassword,
+        },
+      );
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Reset password error: $e');
+      return false;
+    }
+  }
+
   Future<void> sendReset(String email) async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    await sendResetOtp(email);
   }
 
   Future<Map<String, dynamic>?> getPreferences(int userId) async {

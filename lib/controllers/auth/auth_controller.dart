@@ -41,6 +41,41 @@ class AuthController {
     );
   }
 
+  Future<bool> sendOtp(BuildContext context, String email) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final success = await _service.sendResetOtp(email);
+    if (success) {
+      messenger.showSnackBar(const SnackBar(content: Text('OTP sent')));
+    } else {
+      messenger.showSnackBar(const SnackBar(content: Text('Failed to send OTP')));
+    }
+    return success;
+  }
+
+  Future<bool> verifyOtp(BuildContext context, String email, String otp) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final success = await _service.verifyResetOtp(email, otp);
+    if (success) {
+      messenger.showSnackBar(const SnackBar(content: Text('OTP verified')));
+    } else {
+      messenger.showSnackBar(const SnackBar(content: Text('Invalid OTP')));
+    }
+    return success;
+  }
+
+  Future<bool> resetPassword(BuildContext context, String email, String otp, String newPassword) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final success = await _service.resetPassword(email, otp, newPassword);
+    if (success) {
+      messenger.showSnackBar(const SnackBar(content: Text('Password reset successful')));
+      navigator.pop(); // Go back to login
+    } else {
+      messenger.showSnackBar(const SnackBar(content: Text('Failed to reset password')));
+    }
+    return success;
+  }
+
   Future<void> register(BuildContext context, RegisterFormModel form) async {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
