@@ -9,6 +9,8 @@ import '../../models/discover_profile_model.dart';
 import '../../themes/theme.dart';
 import '../../routes.dart';
 import '../../widgets/moments/moment_list.dart';
+import '../../services/auth_service.dart';
+import '../../services/moments_service.dart';
 
 class DiscoverCardView extends StatefulWidget {
   const DiscoverCardView({super.key});
@@ -92,36 +94,181 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
 
   Widget _buildHeader(bool isDark) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF059669)],
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.explore,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.explore,
-            color: Colors.white,
-            size: 20,
-          ),
+            const SizedBox(width: 12),
+            Text(
+              'Discover',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Text(
-          'Discover',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : const Color(0xFF1a1a1a),
-            letterSpacing: -0.5,
-          ),
-        ),
+        const Spacer(),
+        _PreferencesIconButton(isDark: isDark, onTap: _openPreferences),
       ],
     );
   }
 
+  Future<void> _openPreferences() async {
+    final ms = MomentsService();
+    final userId = await ms.getCurrentUserId();
+    if (userId == null) return;
+    final prefs = await AuthService().getPreferences(userId);
+    String gender = (prefs?['pref_gender'] ?? 'Male').toString();
+    int minAge = (prefs?['pref_age_min'] ?? 18) is int
+        ? (prefs?['pref_age_min'] ?? 18)
+        : int.tryParse((prefs?['pref_age_min'] ?? '18').toString()) ?? 18;
+    int maxAge = (prefs?['pref_age_max'] ?? 80) is int
+        ? (prefs?['pref_age_max'] ?? 80)
+        : int.tryParse((prefs?['pref_age_max'] ?? '80').toString()) ?? 80;
+    int distance = (prefs?['pref_location'] ?? 25) is int
+        ? (prefs?['pref_location'] ?? 25)
+        : int.tryParse((prefs?['pref_location'] ?? '25').toString()) ?? 25;
+
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return StatefulBuilder(builder: (context, setState) {
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  20,
+                  16,
+                  16 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.tune, color: Color(0xFF10B981)),
+                        SizedBox(width: 8),
+                        Text('Discovery Preferences', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Attracted To', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: ['Male', 'Female', 'Non-Binary'].map((g) {
+                        final selected = gender == g;
+                        return ChoiceChip(
+                          label: Text(g),
+                          selected: selected,
+                          selectedColor: const Color(0xFF10B981),
+                          labelStyle: TextStyle(color: selected ? Colors.white : Colors.black87),
+                          onSelected: (_) => setState(() => gender = g),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Age Range', style: TextStyle(fontWeight: FontWeight.w600)),
+                    RangeSlider(
+                      values: RangeValues(minAge.toDouble(), maxAge.toDouble()),
+                      min: 18,
+                      max: 100,
+                      divisions: 82,
+                      activeColor: const Color(0xFF10B981),
+                      onChanged: (v) {
+                        setState(() {
+                          minAge = v.start.round();
+                          maxAge = v.end.round();
+                        });
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Min: $minAge'),
+                        Text('Max: $maxAge'),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Distance (km)', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Slider(
+                      value: distance.toDouble(),
+                      min: 0,
+                      max: 100,
+                      divisions: 100,
+                      activeColor: const Color(0xFF10B981),
+                      onChanged: (v) => setState(() => distance = v.round()),
+                    ),
+                    Align(alignment: Alignment.centerRight, child: Text('$distance km')),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final ok = await AuthService().updateProfile(
+                          userId: userId,
+                          username: '',
+                          gender: '',
+                          age: 0,
+                          bio: '',
+                          education: '',
+                          address: '',
+                          postcode: '',
+                          state: '',
+                          city: '',
+                          country: '',
+                          interests: '',
+                          email: '',
+                          phone: '',
+                          prefGender: gender,
+                          prefAgeMin: minAge,
+                          prefAgeMax: maxAge,
+                          prefLocation: distance,
+                        );
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(ok ? 'Preferences updated' : 'Failed to update preferences')),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Save Preferences'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
   Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
@@ -162,6 +309,27 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
   }
 }
 
+class _PreferencesIconButton extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onTap;
+  const _PreferencesIconButton({required this.isDark, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(Icons.tune, color: Color(0xFF10B981)),
+        ),
+      ),
+    );
+  }
+}
 class _CardStack extends StatefulWidget {
   final DiscoverController controller;
   final bool isDark;

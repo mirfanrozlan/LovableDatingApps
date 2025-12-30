@@ -6,6 +6,7 @@ import '../../widgets/common/text_input.dart';
 import '../../services/moments_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
+import '../../routes.dart';
 
 class AccountView extends StatefulWidget {
   const AccountView({super.key});
@@ -17,8 +18,6 @@ class AccountView extends StatefulWidget {
 class _AccountViewState extends State<AccountView> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _gender = TextEditingController();
-  final _age = TextEditingController();
   final _bio = TextEditingController();
   final _education = TextEditingController();
   final _interests = TextEditingController();
@@ -27,8 +26,6 @@ class _AccountViewState extends State<AccountView> {
   final _state = TextEditingController();
   final _city = TextEditingController();
   final _country = TextEditingController();
-  final _email = TextEditingController();
-  final _phone = TextEditingController();
   int? _userId;
   bool _loading = true;
   bool _saving = false;
@@ -61,8 +58,6 @@ class _AccountViewState extends State<AccountView> {
   void _applyUser(UserModel user) {
     _userId = user.id;
     _name.text = user.name;
-    _gender.text = user.gender;
-    _age.text = user.age.toString();
     _bio.text = user.description;
     _education.text = user.education;
     _interests.text = user.interests;
@@ -86,8 +81,8 @@ class _AccountViewState extends State<AccountView> {
     final ok = await svc.updateProfile(
       userId: _userId!,
       username: _name.text.trim(),
-      gender: _gender.text.trim(),
-      age: int.tryParse(_age.text.trim()) ?? 0,
+      gender: '',
+      age: 0,
       bio: _bio.text.trim(),
       education: _education.text.trim(),
       address: _address.text.trim(),
@@ -96,18 +91,24 @@ class _AccountViewState extends State<AccountView> {
       city: _city.text.trim(),
       country: _country.text.trim(),
       interests: _interests.text.trim(),
-      email: _email.text.trim(),
-      phone: _phone.text.trim(),
     );
     setState(() {
       _saving = false;
     });
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Profile updated' : 'Failed to update profile'),
-      ),
-    );
+    if (ok) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.me,
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update profile'),
+        ),
+      );
+    }
   }
 
   @override
@@ -147,50 +148,24 @@ class _AccountViewState extends State<AccountView> {
                           children: [
                             TextInput(controller: _name, hint: 'Enter your name', label: 'Name'),
                             const SizedBox(height: 12),
-                            TextInput(controller: _gender, hint: 'Enter your gender', label: 'Gender'),
+                            
+                            TextInput(controller: _bio, hint: 'Tell us about yourself', label: 'Bio', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(
-                              controller: _age,
-                              hint: 'Enter your age',
-                              label: 'Age',
-                              keyboardType: TextInputType.number,
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Required';
-                                final n = int.tryParse(v);
-                                if (n == null || n <= 0) return 'Invalid age';
-                                return null;
-                              },
-                            ),
+                            TextInput(controller: _education, hint: 'Your education', label: 'Education', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _bio, hint: 'Tell us about yourself', label: 'Bio'),
+                            TextInput(controller: _interests, hint: 'Your interests', label: 'Interests', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _education, hint: 'Your education', label: 'Education'),
+                            TextInput(controller: _address, hint: 'Your address', label: 'Address', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _interests, hint: 'Your interests', label: 'Interests'),
+                            TextInput(controller: _postcode, hint: 'Your postcode', label: 'Postcode', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _address, hint: 'Your address', label: 'Address'),
+                            TextInput(controller: _state, hint: 'Your state', label: 'State', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _postcode, hint: 'Your postcode', label: 'Postcode'),
+                            TextInput(controller: _city, hint: 'Your city', label: 'City', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _state, hint: 'Your state', label: 'State'),
+                            TextInput(controller: _country, hint: 'Your country', label: 'Country', validator: (_) => null),
                             const SizedBox(height: 12),
-                            TextInput(controller: _city, hint: 'Your city', label: 'City'),
-                            const SizedBox(height: 12),
-                            TextInput(controller: _country, hint: 'Your country', label: 'Country'),
-                            const SizedBox(height: 12),
-                            TextInput(
-                              controller: _email,
-                              hint: 'Your email address',
-                              label: 'Email',
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            const SizedBox(height: 12),
-                            TextInput(
-                              controller: _phone,
-                              hint: 'Your phone number',
-                              label: 'Phone',
-                              keyboardType: TextInputType.phone,
-                            ),
+                            
                             const SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,
@@ -225,4 +200,3 @@ class _AccountViewState extends State<AccountView> {
     )));
   }
 }
-

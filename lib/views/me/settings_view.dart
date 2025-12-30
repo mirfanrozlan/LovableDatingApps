@@ -76,15 +76,34 @@ class _SettingsViewState extends State<SettingsView> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundImage: (_user?.media.isNotEmpty ?? false) ? NetworkImage(_user!.media) : null,
-                      child: (_user?.media.isEmpty ?? true)
-                          ? Text(
-                              (_user?.name.isNotEmpty ?? false) ? _user!.name[0].toUpperCase() : '?',
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ClipOval(
+                      child: (_user?.media.isNotEmpty ?? false)
+                          ? Image.network(
+                              _user!.media,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stack) => Container(
+                                width: 72,
+                                height: 72,
+                                color: Colors.grey.shade300,
+                                alignment: Alignment.center,
+                                child: Text(
+                                  (_user?.name.isNotEmpty ?? false) ? _user!.name[0].toUpperCase() : '?',
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                ),
+                              ),
                             )
-                          : null,
+                          : Container(
+                              width: 72,
+                              height: 72,
+                              color: Colors.grey.shade300,
+                              alignment: Alignment.center,
+                              child: Text(
+                                (_user?.name.isNotEmpty ?? false) ? _user!.name[0].toUpperCase() : '?',
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
