@@ -18,8 +18,10 @@ class ChatView extends StatefulWidget {
 class _ChatViewState extends State<ChatView> {
   late final MessagesController _controller;
   final _input = TextEditingController();
+  final _scrollController = ScrollController();
   String? _chatId;
   Timer? _typingTimer;
+  int _lastCount = 0;
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _ChatViewState extends State<ChatView> {
     _controller.dispose();
     _input.dispose();
     _typingTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -71,15 +74,10 @@ class _ChatViewState extends State<ChatView> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF1a1a1a),
-                    const Color(0xFF0a0a0a),
-                  ]
-                : [
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFFDCFCE7),
-                  ],
+            colors:
+                isDark
+                    ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
+                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
           ),
         ),
         child: Center(
@@ -92,23 +90,43 @@ class _ChatViewState extends State<ChatView> {
                   color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     child: Row(
                       children: [
                         CircleAvatar(
                           backgroundImage:
-                              chat?.avatarUrl != null && chat!.avatarUrl!.isNotEmpty ? NetworkImage(chat.avatarUrl!) : null,
-                          child: chat?.avatarUrl == null || chat!.avatarUrl!.isEmpty ? Text(chat?.initials ?? '?') : null,
+                              chat?.avatarUrl != null &&
+                                      chat!.avatarUrl!.isNotEmpty
+                                  ? NetworkImage(chat.avatarUrl!)
+                                  : null,
+                          child:
+                              chat?.avatarUrl == null ||
+                                      chat!.avatarUrl!.isEmpty
+                                  ? Text(chat?.initials ?? '?')
+                                  : null,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
                               Text(
-                                'Available',
-                                style: TextStyle(color: isDark ? Colors.white60 : Colors.black.withValues(alpha: 0.6)),
+                                name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                _controller.isTyping ? 'Typing…' : 'Available',
+                                style: TextStyle(
+                                  color:
+                                      isDark
+                                          ? Colors.white60
+                                          : Colors.black.withValues(alpha: 0.6),
+                                ),
                               ),
                             ],
                           ),
@@ -116,13 +134,21 @@ class _ChatViewState extends State<ChatView> {
                         _HeaderIcon(
                           icon: Icons.call,
                           onTap:
-                              () => Navigator.pushNamed(context, AppRoutes.call, arguments: chat),
+                              () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.call,
+                                arguments: chat,
+                              ),
                         ),
                         const SizedBox(width: 6),
                         _HeaderIcon(
                           icon: Icons.videocam,
                           onTap:
-                              () => Navigator.pushNamed(context, AppRoutes.videoCall, arguments: chat),
+                              () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.videoCall,
+                                arguments: chat,
+                              ),
                         ),
                         const SizedBox(width: 6),
                         _HeaderIcon(icon: Icons.more_vert, onTap: () {}),
@@ -135,15 +161,49 @@ class _ChatViewState extends State<ChatView> {
                   child: AnimatedBuilder(
                     animation: _controller,
                     builder: (context, _) {
-                      final msgs = _chatId != null ? _controller.getConversation(_chatId!) : [];
+                      final msgs =
+                          _chatId != null
+                              ? _controller.getConversation(_chatId!)
+                              : [];
+                      if (msgs.length != _lastCount) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (_scrollController.hasClients) {
+                            _scrollController.jumpTo(
+                              _scrollController.position.maxScrollExtent,
+                            );
+                          }
+                        });
+                        _lastCount = msgs.length;
+                      }
+                      if (_controller.isTyping) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (_scrollController.hasClients) {
+                            _scrollController.jumpTo(
+                              _scrollController.position.maxScrollExtent,
+                            );
+                          }
+                        });
+                      }
 
-                      if (msgs.isEmpty) {
+                      if (msgs.isEmpty && !_controller.isTyping) {
                         return const Center(child: Text('No messages yet.'));
                       }
 
                       return ListView.builder(
-                        itemCount: msgs.length,
-                        itemBuilder: (context, i) => MessageBubble(text: msgs[i].text, isMe: msgs[i].isMe),
+                        controller: _scrollController,
+                        itemCount: msgs.length + (_controller.isTyping ? 1 : 0),
+                        itemBuilder: (context, i) {
+                          if (_controller.isTyping && i == msgs.length) {
+                            return const _TypingBubble();
+                          }
+                          final m = msgs[i];
+                          return MessageBubble(
+                            text: m.text,
+                            isMe: m.isMe,
+                            timestamp: m.timestamp,
+                            largeEmoji: m.largeEmoji,
+                          );
+                        },
                       );
                     },
                   ),
@@ -166,11 +226,14 @@ class _ChatViewState extends State<ChatView> {
                             if (_chatId == null) return;
                             _controller.setTyping(_chatId!, true);
                             _typingTimer?.cancel();
-                            _typingTimer = Timer(const Duration(seconds: 2), () {
-                              if (_chatId != null) {
-                                _controller.setTyping(_chatId!, false);
-                              }
-                            });
+                            _typingTimer = Timer(
+                              const Duration(seconds: 2),
+                              () {
+                                if (_chatId != null) {
+                                  _controller.setTyping(_chatId!, false);
+                                }
+                              },
+                            );
                           },
                           onSubmitted: (_) => _sendMessage(),
                         ),
@@ -231,6 +294,33 @@ class _HeaderIcon extends StatelessWidget {
         ],
       ),
       child: IconButton(onPressed: onTap, icon: Icon(icon)),
+    );
+  }
+}
+
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment:
+          Alignment.centerLeft, // This keeps the container from stretching
+      child: Container(
+        margin: const EdgeInsets.only(right: 60, top: 6, bottom: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+            bottomLeft: Radius.circular(2),
+          ),
+          boxShadow: const [BoxShadow(color: Color(0x10000000), blurRadius: 6)],
+        ),
+        // REMOVE FittedBox if you just want it to wrap naturally
+        child: const Text('Typing…', style: TextStyle(color: Colors.black54)),
+      ),
     );
   }
 }

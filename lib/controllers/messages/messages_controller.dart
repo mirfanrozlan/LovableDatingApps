@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/messages/chat_summary_model.dart';
 import '../../models/messages/message_model.dart';
@@ -15,8 +16,11 @@ class MessagesController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Cache for conversations (temporary until real-time is fully hooked up)
-  final Map<String, List<MessageModel>> _conversations = {};
+  final List<MessageModel> _messages = [];
+  StreamSubscription<Map<String, dynamic>>? _msgSub;
+  String? _activeChatId;
+  bool _isTyping = false;
+  final Set<String> _knownMessageIds = {};
 
   MessagesController() {
     // Optionally load on init if singleton, but usually called from view
@@ -24,6 +28,7 @@ class MessagesController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _msgSub?.cancel();
     super.dispose();
   }
 
@@ -60,8 +65,10 @@ class MessagesController extends ChangeNotifier {
   }
 
   List<MessageModel> getConversation(String chatId) {
-    return _conversations[chatId] ?? [];
+    return _messages.where((m) => m.chatId == chatId).toList();
   }
+
+  bool get isTyping => _isTyping;
 
   Future<void> sendMessage(String chatId, String text) async {
     final userId = int.tryParse(chatId);
@@ -69,22 +76,24 @@ class MessagesController extends ChangeNotifier {
 
     // Optimistic update
     final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+    final largeEmoji = _isEmojiOnly(text.trim());
     final msg = MessageModel(
       id: tempId,
       chatId: chatId,
       text: text,
       timestamp: DateTime.now(),
       isMe: true,
+      largeEmoji: largeEmoji,
     );
 
-    _addMessageToCache(chatId, msg);
+    _messages.add(msg);
     notifyListeners();
 
     try {
       final result = await _service.sendMessage(userId, text);
       if (result == null) {
         // Failed: Remove message or mark as error
-        _removeMessageFromCache(chatId, tempId);
+        _removeMessageById(tempId);
         _error = "Failed to send message";
         notifyListeners();
       } else {
@@ -109,7 +118,7 @@ class MessagesController extends ChangeNotifier {
         }
       }
     } catch (e) {
-      _removeMessageFromCache(chatId, tempId);
+      _removeMessageById(tempId);
       _error = e.toString();
       notifyListeners();
     }
@@ -123,18 +132,8 @@ class MessagesController extends ChangeNotifier {
     } catch (_) {}
   }
 
-  void _addMessageToCache(String chatId, MessageModel msg) {
-    if (_conversations.containsKey(chatId)) {
-      _conversations[chatId]!.add(msg);
-    } else {
-      _conversations[chatId] = [msg];
-    }
-  }
-
-  void _removeMessageFromCache(String chatId, String msgId) {
-    if (_conversations.containsKey(chatId)) {
-      _conversations[chatId]!.removeWhere((m) => m.id == msgId);
-    }
+  void _removeMessageById(String msgId) {
+    _messages.removeWhere((m) => m.id == msgId);
   }
 
   // Called when receiving a message via WebSocket (or other means)
@@ -154,7 +153,7 @@ class MessagesController extends ChangeNotifier {
       isMe: false,
     );
 
-    _addMessageToCache(senderId, msg);
+    _messages.add(msg);
     notifyListeners();
   }
 
@@ -164,12 +163,83 @@ class MessagesController extends ChangeNotifier {
     if (userId == null) return;
 
     try {
+      _activeChatId = chatId;
+      _messages.clear();
+
+      _msgSub?.cancel();
+      _msgSub = _service.messages.listen((data) {
+        try {
+          if (data['type'] == 'delete' && data['id'] != null) {
+            _removeMessageById(data['id'].toString());
+            notifyListeners();
+            return;
+          }
+          if (data['type'] == 'typing') {
+            final senderId = data['sender_id'];
+            final typing = data['typing'] == true;
+            if (_activeChatId != null && senderId != null) {
+              _isTyping = typing && senderId.toString() == _activeChatId;
+              notifyListeners();
+            }
+            return;
+          }
+
+          final senderId = data['sender_id'];
+          final text = data['message'];
+          final ts = data['ts'];
+          if (senderId == null || text == null || ts == null) return;
+          final idStr = data['id']?.toString();
+          if (idStr != null && _knownMessageIds.contains(idStr)) return;
+
+          final isMe =
+              int.tryParse(chatId) != null && senderId != int.parse(chatId);
+          final when = _parseTs(ts);
+          final largeEmoji = _isEmojiOnly(text.toString().trim());
+          if (isMe) {
+            final idx = _messages.lastIndexWhere(
+              (m) => m.chatId == chatId && m.isMe && m.text == text.toString(),
+            );
+            if (idx != -1) {
+              _messages[idx] = MessageModel(
+                id: idStr ?? when.millisecondsSinceEpoch.toString(),
+                chatId: chatId,
+                text: text.toString(),
+                timestamp: when,
+                isMe: true,
+                largeEmoji: largeEmoji,
+              );
+            } else {
+              final msg = MessageModel(
+                id: idStr ?? when.millisecondsSinceEpoch.toString(),
+                chatId: chatId,
+                text: text.toString(),
+                timestamp: when,
+                isMe: true,
+                largeEmoji: largeEmoji,
+              );
+              _messages.add(msg);
+            }
+          } else {
+            final msg = MessageModel(
+              id: idStr ?? when.millisecondsSinceEpoch.toString(),
+              chatId: chatId,
+              text: text.toString(),
+              timestamp: when,
+              isMe: false,
+              largeEmoji: largeEmoji,
+            );
+            _messages.add(msg);
+          }
+          if (idStr != null) _knownMessageIds.add(idStr);
+          notifyListeners();
+        } catch (_) {}
+      });
+
       // Call connectChat first to establish connection
       final connectData = await _service.connectChat();
       if (connectData == null) {
         print('Failed to connect to chat system');
       }
-
 
       final subData = await _service.subscribeChat(userId);
       if (subData == null) {
@@ -177,9 +247,29 @@ class MessagesController extends ChangeNotifier {
         return;
       }
 
-      print('Chat subscription active for $chatId (HTTP only)');
+      print('Chat subscription active for $chatId');
     } catch (e) {
       print('Error connecting to chat: $e');
     }
+  }
+
+  DateTime _parseTs(dynamic ts) {
+    if (ts is int) {
+      return DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+    }
+    if (ts is String) {
+      final parsed = DateTime.tryParse(ts);
+      if (parsed != null) return parsed;
+    }
+    return DateTime.now();
+  }
+
+  bool _isEmojiOnly(String input) {
+    if (input.isEmpty) return false;
+    final pattern = RegExp(
+      r'^[\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u200D\uFE0F]+$',
+      unicode: true,
+    );
+    return pattern.hasMatch(input);
   }
 }

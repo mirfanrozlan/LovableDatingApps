@@ -4,5 +4,13 @@ class MessageModel {
   final String text;
   final DateTime timestamp;
   final bool isMe;
-  MessageModel({required this.id, required this.chatId, required this.text, required this.timestamp, required this.isMe});
+  final bool largeEmoji;
+  MessageModel({
+    required this.id,
+    required this.chatId,
+    required this.text,
+    required this.timestamp,
+    required this.isMe,
+    this.largeEmoji = false,
+  });
 }
