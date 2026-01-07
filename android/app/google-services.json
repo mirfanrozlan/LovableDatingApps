@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "79025728776",
+    "project_id": "lovabledatingapps",
+    "storage_bucket": "lovabledatingapps.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79025728776:android:74eb17c91f1784924090bd",
+        "android_client_info": {
+          "package_name": "com.android.datingapps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFt5RtgI8itoTl6JSvmcxfloOa9URubmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79025728776:android:d11cae1427f860504090bd",
+        "android_client_info": {
+          "package_name": "com.example.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFt5RtgI8itoTl6JSvmcxfloOa9URubmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
