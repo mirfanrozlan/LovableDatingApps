@@ -39,10 +39,6 @@ class Signaling {
   bool preferRelayFallback = false;
   final List<Map<String, dynamic>> _localIceBuffer = [];
   void Function()? onNeedRelayFallback;
-  void Function()? onRemoteHangUp;
-  Timer? _keepAliveTimer;
-  bool _background = false;
-  final List<bool> _prevVideoEnabled = [];
   bool _isCaller = false;
   bool _remoteDescriptionSet = false;
   bool _pcClosed = false;
@@ -109,9 +105,6 @@ class Signaling {
       }
     };
 
-    peerConnection?.onDataChannel = (RTCDataChannel channel) {
-      dataChannel = channel;
-    };
     dataChannel = await peerConnection!.createDataChannel(
       'signal',
       RTCDataChannelInit(),
@@ -127,16 +120,6 @@ class Signaling {
 
     final subRoom = roomRef.snapshots().listen((snapshot) async {
       if (_pcClosed) {
-        return;
-      }
-      if (!snapshot.exists) {
-        final lr = _localRenderer;
-        if (lr != null) {
-          await hangUp(lr);
-        }
-        if (onRemoteHangUp != null) {
-          onRemoteHangUp!();
-        }
         return;
       }
       Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
@@ -195,14 +178,21 @@ class Signaling {
     return roomId;
   }
 
-  Future<void> hangUp(RTCVideoRenderer localVideo) async {
-    List<MediaStreamTrack> tracks = localVideo.srcObject!.getTracks();
-    tracks.forEach((track) {
-      track.stop();
-    });
+  Future<void> hangUp([RTCVideoRenderer? localVideo]) async {
+    final lv = localVideo ?? _localRenderer;
+    final src = lv?.srcObject ?? LocalStream;
+    if (src != null) {
+      final tracks = src.getTracks();
+      for (final t in tracks) {
+        t.stop();
+      }
+    }
 
-    if (RemoteStream != null)
-      RemoteStream!.getTracks().forEach((track) => track.stop());
+    if (RemoteStream != null) {
+      for (final t in RemoteStream!.getTracks()) {
+        t.stop();
+      }
+    }
 
     if (peerConnection != null) {
       await peerConnection!.close();
@@ -215,17 +205,22 @@ class Signaling {
     _cancelSubscriptions();
 
     if (roomId != null) {
-      var db = FirebaseFirestore.instance;
-      var roomRef = db.collection('rooms').doc(roomId);
-      var calleeCandidates = await roomRef.collection('calleeCandidates').get();
-      calleeCandidates.docs.forEach((document) => document.reference.delete());
+      final db = FirebaseFirestore.instance;
+      final roomRef = db.collection('rooms').doc(roomId);
+      final calleeCandidates =
+          await roomRef.collection('calleeCandidates').get();
+      for (final d in calleeCandidates.docs) {
+        d.reference.delete();
+      }
 
-      var callerCandidates = await roomRef.collection('callerCandidates').get();
-      callerCandidates.docs.forEach((document) => document.reference.delete());
+      final callerCandidates =
+          await roomRef.collection('callerCandidates').get();
+      for (final d in callerCandidates.docs) {
+        d.reference.delete();
+      }
 
       await roomRef.delete();
     }
-    _stopKeepAlive();
   }
 
   Future<void> joinRoom(String roomId) async {
@@ -297,14 +292,10 @@ class Signaling {
         RTCSessionDescription(offer['sdp'], offer['type']),
       );
       _remoteDescriptionSet = true;
-      await Future.delayed(const Duration(seconds: 2));
       var answer = await peerConnection!.createAnswer();
       await peerConnection!.setLocalDescription(answer);
       await roomRef.update({'answer': answer.toMap()});
 
-      peerConnection?.onDataChannel = (RTCDataChannel channel) {
-        dataChannel = channel;
-      };
       final subCaller = roomRef
           .collection('callerCandidates')
           .snapshots()
@@ -337,21 +328,6 @@ class Signaling {
           });
       _subscriptions.add(subCaller);
     }
-    final subRoom = roomRef.snapshots().listen((snapshot) async {
-      if (_pcClosed) {
-        return;
-      }
-      if (!snapshot.exists) {
-        final lr = _localRenderer;
-        if (lr != null) {
-          await hangUp(lr);
-        }
-        if (onRemoteHangUp != null) {
-          onRemoteHangUp!();
-        }
-      }
-    });
-    _subscriptions.add(subRoom);
   }
 
   Future<void> openMedia(
@@ -466,55 +442,6 @@ class Signaling {
         }
       }
     };
-  }
-
-  void enterBackground() {
-    _background = true;
-    _prevVideoEnabled.clear();
-    final stream = LocalStream;
-    if (stream != null) {
-      final vids = stream.getVideoTracks();
-      for (final t in vids) {
-        _prevVideoEnabled.add(t.enabled);
-        t.enabled = false;
-      }
-    }
-    _startKeepAlive();
-  }
-
-  void exitBackground() {
-    _background = false;
-    final stream = LocalStream;
-    if (stream != null) {
-      final vids = stream.getVideoTracks();
-      for (int i = 0; i < vids.length; i++) {
-        final prev = i < _prevVideoEnabled.length ? _prevVideoEnabled[i] : true;
-        vids[i].enabled = prev;
-      }
-    }
-    _prevVideoEnabled.clear();
-    _stopKeepAlive();
-  }
-
-  void _startKeepAlive() {
-    _keepAliveTimer?.cancel();
-    _keepAliveTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
-      final dc = dataChannel;
-      if (dc != null) {
-        try {
-          dc.send(RTCDataChannelMessage('ping'));
-        } catch (_) {}
-      } else {
-        try {
-          await peerConnection?.getStats();
-        } catch (_) {}
-      }
-    });
-  }
-
-  void _stopKeepAlive() {
-    _keepAliveTimer?.cancel();
-    _keepAliveTimer = null;
   }
 
   Future<void> _printDescriptions(String prefix) async {

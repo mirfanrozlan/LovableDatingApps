@@ -124,6 +124,29 @@ class MessagesController extends ChangeNotifier {
     }
   }
 
+  Future<bool> startIncomingCall({
+    required int calleeUserId,
+    required String uuid,
+    required String callerName,
+    required String callerHandle,
+    String? callerAvatar,
+    required int callType,
+  }) async {
+    try {
+      final ok = await _service.notifyIncomingCall(
+        uuid: uuid,
+        callerName: callerName,
+        callerHandle: callerHandle,
+        callerAvatar: callerAvatar,
+        callType: callType,
+        calleeUserId: calleeUserId,
+      );
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> setTyping(String chatId, bool typing) async {
     final userId = int.tryParse(chatId);
     if (userId == null) return;

@@ -235,7 +235,7 @@ class _MomentDetailViewState extends State<MomentDetailView> {
     });
 
     try {
-      await widget.controller.likeComment(comment.comsId);
+      await widget.controller.likeComment(comment.comsId, comment.publishId);
     } catch (e) {
       // Revert if failed
       if (mounted) {
@@ -380,7 +380,10 @@ class _MomentDetailViewState extends State<MomentDetailView> {
                     MomentCard(
                       post: widget.post,
                       onLike:
-                          () => widget.controller.likePost(widget.post.postId),
+                          () => widget.controller.likePost(
+                            widget.post.postId,
+                            widget.post.userId,
+                          ),
                       onLoadComments: () async => [], // Not used here
                       onAddComment:
                           (_, {parentId, replyId}) async =>
@@ -406,7 +409,6 @@ class _MomentDetailViewState extends State<MomentDetailView> {
                 ),
               ),
             ),
-            // Comment Input
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,

@@ -4,8 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../widgets/common/app_scaffold.dart';
-import '../../models/messages/chat_summary_model.dart';
 import '../../services/signaling.dart';
+import '../../models/messages/chat_summary_model.dart';
 
 class CallingView extends StatefulWidget {
   const CallingView({super.key});
@@ -14,7 +14,7 @@ class CallingView extends StatefulWidget {
   State<CallingView> createState() => _CallingViewState();
 }
 
-class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
+class _CallingViewState extends State<CallingView> {
   final _signaling = Signaling();
   final _localRenderer = RTCVideoRenderer();
   final _remoteRenderer = RTCVideoRenderer();
@@ -23,15 +23,11 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
   bool _muted = false;
   String _statusText = 'Connecting...';
   bool _speakerOn = true;
-  Timer? _callTimer;
-  int _seconds = 0;
-  int? _meId;
-  int? _otherId;
+  StreamSubscription? _roomSub;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _init();
   }
 
@@ -39,20 +35,24 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
 
-    final args =
-        ModalRoute.of(context)?.settings.arguments as ChatSummaryModel?;
+    final rawArgs = ModalRoute.of(context)?.settings.arguments;
+    final args = rawArgs is ChatSummaryModel ? rawArgs : null;
     final storage = const FlutterSecureStorage();
     final meStr = await storage.read(key: 'user_id');
-    _meId = int.tryParse(meStr ?? '');
-    _otherId = int.tryParse(args?.id ?? '');
-    if (_meId == null || _otherId == null) {
-      setState(() => _initialized = true);
-      return;
+    final meId = int.tryParse(meStr ?? '');
+    if (rawArgs is Map && rawArgs['roomId'] is String) {
+      _roomId = rawArgs['roomId'] as String;
+    } else {
+      final otherId = int.tryParse(args?.id ?? '');
+      if (meId == null || otherId == null) {
+        setState(() => _initialized = true);
+        return;
+      }
+      final a = meId <= otherId ? meId : otherId;
+      final b = meId <= otherId ? otherId : meId;
+      final roomId = 'vc_${a}_$b';
+      _roomId = roomId;
     }
-    final a = _meId! <= _otherId! ? _meId! : _otherId!;
-    final b = _meId! <= _otherId! ? _otherId! : _meId!;
-    final roomId = 'vc_${a}_$b';
-    _roomId = roomId;
 
     _signaling.onPeerConnectionState = (state) {
       if (!mounted) return;
@@ -62,8 +62,6 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
         } else if (state ==
             RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           _statusText = 'Connected';
-          _startTimer();
-          _setBusy(true);
         } else if (state ==
             RTCPeerConnectionState.RTCPeerConnectionStateConnecting) {
           _statusText = 'Connecting...';
@@ -78,22 +76,6 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
         });
       }
     };
-    _signaling.onRemoteHangUp = () {
-      if (!mounted) return;
-      _stopTimer();
-      _setBusy(false);
-      Navigator.pop(context);
-    };
-
-    final busy = await _isOtherBusy();
-    if (busy) {
-      if (!mounted) return;
-      setState(() => _statusText = 'User is busy');
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) Navigator.pop(context);
-      });
-      return;
-    }
 
     await _signaling.openMedia(
       _localRenderer,
@@ -102,22 +84,29 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
       audio: true,
     );
 
-    final roomRef = FirebaseFirestore.instance.collection('rooms').doc(roomId);
+    final roomRef = FirebaseFirestore.instance
+        .collection('rooms')
+        .doc(_roomId!);
     final snap = await roomRef.get();
     if (snap.exists && (snap.data()?['offer'] != null)) {
-      await _signaling.joinRoom(roomId);
+      await _signaling.joinRoom(_roomId!);
     } else {
-      await _signaling.createRoom(roomId);
+      await _signaling.createRoom(_roomId!);
     }
+    _roomSub = roomRef.snapshots().listen((snapshot) async {
+      if (!snapshot.exists) {
+        setState(() => _statusText = 'Call ended');
+        await _signaling.hangUp(_localRenderer);
+        if (mounted) Navigator.pop(context);
+      }
+    });
 
     if (mounted) setState(() => _initialized = true);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _stopTimer();
-    _setBusy(false);
+    _roomSub?.cancel();
     _signaling.hangUp(_localRenderer);
     _localRenderer.dispose();
     _remoteRenderer.dispose();
@@ -125,8 +114,6 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
   }
 
   Future<void> _endCall(BuildContext context) async {
-    _stopTimer();
-    _setBusy(false);
     await _signaling.hangUp(_localRenderer);
     Navigator.pop(context);
   }
@@ -149,20 +136,7 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _signaling.enterBackground();
-    } else if (state == AppLifecycleState.resumed) {
-      _signaling.exitBackground();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    String hh = (_seconds ~/ 3600).toString().padLeft(2, '0');
-    String mm = ((_seconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    String ss = (_seconds % 60).toString().padLeft(2, '0');
     return AppScaffold(
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -174,7 +148,7 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
             const SizedBox(height: 40),
             const CircleAvatar(radius: 60),
             const SizedBox(height: 20),
-            Text('$hh:$mm:$ss', style: const TextStyle(color: Colors.white70)),
+            const Text('00:01', style: TextStyle(color: Colors.white70)),
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -214,45 +188,5 @@ class _CallingViewState extends State<CallingView> with WidgetsBindingObserver {
         ),
       ),
     );
-  }
-
-  void _startTimer() {
-    _callTimer?.cancel();
-    _callTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _seconds++;
-      });
-    });
-  }
-
-  void _stopTimer() {
-    _callTimer?.cancel();
-    _callTimer = null;
-    _seconds = 0;
-  }
-
-  Future<bool> _isOtherBusy() async {
-    try {
-      final oid = _otherId?.toString();
-      if (oid == null) return false;
-      final snap =
-          await FirebaseFirestore.instance.collection('users').doc(oid).get();
-      final data = snap.data() ?? {};
-      final busy = data['busy'] == true;
-      return busy;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> _setBusy(bool busy) async {
-    try {
-      final mid = _meId?.toString();
-      if (mid == null) return;
-      await FirebaseFirestore.instance.collection('users').doc(mid).set({
-        'busy': busy,
-      }, SetOptions(merge: true));
-    } catch (_) {}
   }
 }

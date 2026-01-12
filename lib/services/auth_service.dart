@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthService {
   Future<bool> sendResetOtp(String email) async {
@@ -38,15 +39,15 @@ class AuthService {
     }
   }
 
-  Future<bool> resetPassword(String email, String otp, String newPassword) async {
+  Future<bool> resetPassword(
+    String email,
+    String otp,
+    String newPassword,
+  ) async {
     try {
       final response = await http.post(
         Uri.https('demo.mazri-minecraft.xyz', '/api/forgot/reset'),
-        body: {
-          'email': email,
-          'otp': otp,
-          'new_password': newPassword,
-        },
+        body: {'email': email, 'otp': otp, 'new_password': newPassword},
       );
       if (response.statusCode == 200) {
         return true;
@@ -66,13 +67,14 @@ class AuthService {
     try {
       final storage = const FlutterSecureStorage();
       final token = await storage.read(key: 'auth_token');
-      final headers = <String, String>{
-        'Accept': 'application/json',
-      };
+      final headers = <String, String>{'Accept': 'application/json'};
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
-      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/fetchpref/$userId');
+      final uri = Uri.https(
+        'demo.mazri-minecraft.xyz',
+        '/api/fetchpref/$userId',
+      );
       final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -128,9 +130,9 @@ class AuthService {
     try {
       var response = await http
           .post(
-        Uri.https('demo.mazri-minecraft.xyz', '/api/login'),
-        body: {'user_name': email, 'user_password': password},
-      )
+            Uri.https('demo.mazri-minecraft.xyz', '/api/login'),
+            body: {'user_name': email, 'user_password': password},
+          )
           .timeout(const Duration(seconds: 15));
       print(response.body);
 
@@ -178,6 +180,14 @@ class AuthService {
             await storage.write(key: 'user_id', value: userId);
           }
 
+          // After successful login: request notification permission and register FCM token
+          try {
+            await _registerFcmToken();
+          } catch (e) {
+            // Do not fail login if FCM registration fails
+            print('FCM token register error: $e');
+          }
+
           return LoginStatus.success;
         }
       }
@@ -189,6 +199,50 @@ class AuthService {
       return LoginStatus.network_error;
     } catch (e) {
       return LoginStatus.network_error;
+    }
+  }
+
+  /// Request notification permission (if needed) and send the current
+  /// Firebase Cloud Messaging token to the backend `/api/setToken` endpoint.
+  ///
+  /// This should be called after a successful login so the server can
+  /// associate the device token with the authenticated user.
+  Future<void> _registerFcmToken() async {
+    try {
+      // Request notification permission (Android 13+, iOS)
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // Get FCM token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken == null || fcmToken.isEmpty) {
+        print('FCM token is null or empty, skip setToken');
+        return;
+      }
+
+      const storage = FlutterSecureStorage();
+      final authToken = await storage.read(key: 'auth_token');
+      if (authToken == null || authToken.isEmpty) {
+        print('Auth token missing, cannot call /api/setToken');
+        return;
+      }
+
+      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/setToken');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Accept': 'application/json',
+        },
+        body: {'fcm_token': fcmToken},
+      );
+
+      print('setToken response: ${response.statusCode} ${response.body}');
+    } catch (e) {
+      print('Error registering FCM token: $e');
     }
   }
 
@@ -214,11 +268,17 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchPreferences(int userId, String? token) async {
+  Future<Map<String, dynamic>?> _fetchPreferences(
+    int userId,
+    String? token,
+  ) async {
     try {
       final headers = <String, String>{'Accept': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
-      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/fetchpref/$userId');
+      final uri = Uri.https(
+        'demo.mazri-minecraft.xyz',
+        '/api/fetchpref/$userId',
+      );
       final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -230,7 +290,10 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchUserDetails(int userId, String? token) async {
+  Future<Map<String, dynamic>?> _fetchUserDetails(
+    int userId,
+    String? token,
+  ) async {
     try {
       final headers = <String, String>{'Accept': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -270,9 +333,7 @@ class AuthService {
     try {
       final storage = const FlutterSecureStorage();
       final token = await storage.read(key: 'auth_token');
-      final headers = <String, String>{
-        'Accept': 'application/json',
-      };
+      final headers = <String, String>{'Accept': 'application/json'};
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -282,7 +343,10 @@ class AuthService {
         try {
           final h = <String, String>{'Accept': 'application/json'};
           if (token != null) h['Authorization'] = 'Bearer $token';
-          final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/fetchpref/$userId');
+          final uri = Uri.https(
+            'demo.mazri-minecraft.xyz',
+            '/api/fetchpref/$userId',
+          );
           final response = await http.get(uri, headers: h);
           if (response.statusCode == 200) {
             return jsonDecode(response.body);
@@ -297,7 +361,10 @@ class AuthService {
         try {
           final h = <String, String>{'Accept': 'application/json'};
           if (token != null) h['Authorization'] = 'Bearer $token';
-          final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/getUser/$userId');
+          final uri = Uri.https(
+            'demo.mazri-minecraft.xyz',
+            '/api/getUser/$userId',
+          );
           final response = await http.get(uri, headers: h);
           if (response.statusCode == 200) {
             return jsonDecode(response.body);
@@ -313,21 +380,52 @@ class AuthService {
       final currentPrefs = await getPreferences(userId);
 
       final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/updateProfile');
-      
+
       final body = {
-        'users[user_name]': (username.trim().isEmpty ? (currentUser?['user_name'] ?? '') : username),
-        'users[user_gender]': (gender.trim().isEmpty ? (currentUser?['user_gender'] ?? '') : gender),
-        'users[user_age]': (age <= 0 ? (currentUser?['user_age'] ?? 0).toString() : age.toString()),
-        'users[user_desc]': (bio.trim().isEmpty ? (currentUser?['user_desc'] ?? '') : bio),
-        'users[user_education]': (education.trim().isEmpty ? (currentUser?['user_education'] ?? '') : education),
-        'users[user_subs]': (subscription.trim().isEmpty ? (currentUser?['user_subs'] ?? 'no') : subscription),
-        'users[user_media]': currentUser?['user_media'] ?? 'Assets/Profile\\21.png', // Fallback
-        'locations[user_address]': (address.trim().isEmpty ? (currentUser?['user_address'] ?? '') : address),
-        'locations[user_postcode]': (postcode.trim().isEmpty ? (currentUser?['user_postcode'] ?? '') : postcode),
-        'locations[user_state]': (state.trim().isEmpty ? (currentUser?['user_state'] ?? '') : state),
-        'locations[user_city]': (city.trim().isEmpty ? (currentUser?['user_city'] ?? '') : city),
-        'locations[user_country]': (country.trim().isEmpty ? (currentUser?['user_country'] ?? '') : country),
-        'interest[user_interest]': (interests.trim().isEmpty ? (currentUser?['user_interest'] ?? '') : interests),
+        'users[user_name]':
+            (username.trim().isEmpty
+                ? (currentUser?['user_name'] ?? '')
+                : username),
+        'users[user_gender]':
+            (gender.trim().isEmpty
+                ? (currentUser?['user_gender'] ?? '')
+                : gender),
+        'users[user_age]':
+            (age <= 0
+                ? (currentUser?['user_age'] ?? 0).toString()
+                : age.toString()),
+        'users[user_desc]':
+            (bio.trim().isEmpty ? (currentUser?['user_desc'] ?? '') : bio),
+        'users[user_education]':
+            (education.trim().isEmpty
+                ? (currentUser?['user_education'] ?? '')
+                : education),
+        'users[user_subs]':
+            (subscription.trim().isEmpty
+                ? (currentUser?['user_subs'] ?? 'no')
+                : subscription),
+        'users[user_media]':
+            currentUser?['user_media'] ?? 'Assets/Profile\\21.png', // Fallback
+        'locations[user_address]':
+            (address.trim().isEmpty
+                ? (currentUser?['user_address'] ?? '')
+                : address),
+        'locations[user_postcode]':
+            (postcode.trim().isEmpty
+                ? (currentUser?['user_postcode'] ?? '')
+                : postcode),
+        'locations[user_state]':
+            (state.trim().isEmpty ? (currentUser?['user_state'] ?? '') : state),
+        'locations[user_city]':
+            (city.trim().isEmpty ? (currentUser?['user_city'] ?? '') : city),
+        'locations[user_country]':
+            (country.trim().isEmpty
+                ? (currentUser?['user_country'] ?? '')
+                : country),
+        'interest[user_interest]':
+            (interests.trim().isEmpty
+                ? (currentUser?['user_interest'] ?? '')
+                : interests),
         // Credentials: include only if provided to avoid unintended resets
       };
       if (email.trim().isNotEmpty) {
@@ -348,11 +446,7 @@ class AuthService {
       body['preferences[pref_location]'] =
           ((prefLocation ?? (currentPrefs?['pref_location'] ?? 50))).toString();
 
-      final response = await http.post(
-        uri,
-        headers: headers,
-        body: body,
-      );
+      final response = await http.post(uri, headers: headers, body: body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return true;
       }

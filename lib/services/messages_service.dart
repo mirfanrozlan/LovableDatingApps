@@ -71,6 +71,88 @@ class MessagesService {
     }
   }
 
+  Future<bool> notifyIncomingCall({
+    required String uuid,
+    required String callerName,
+    required String callerHandle,
+    String? callerAvatar,
+    required int callType,
+    required int calleeUserId,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return false;
+      final uri = Uri.https(_authority, '/api/notify/incoming-call');
+      final payload = {
+        'room_id': uuid, // Use room_id instead of uuid
+        'caller_id': int.tryParse(callerHandle) ?? 0, // Use caller_id
+        'caller_name': callerName, // Use caller_name
+        'caller_avatar': callerAvatar ?? '', // Use caller_avatar
+        'call_type': callType == 1 ? 'video' : 'audio', // Use call_type
+        'callee_id': calleeUserId,
+        // Keep old format for backward compatibility
+        'uuid': uuid,
+        'callerName': callerName,
+        'callerHandle': callerHandle,
+        'callerAvatar': callerAvatar ?? '',
+        'callType': callType.toString(),
+      };
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('Error notify incoming call: $e');
+      return false;
+    }
+  }
+
+  Future<bool> notifyIncomingCaller({
+    required String uuid,
+    required String callerName,
+    required String callerHandle,
+    String? callerAvatar,
+    required int callType,
+    required int calleeUserId,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return false;
+      final uri = Uri.https(_authority, '/api/notify/incoming-caller');
+      final payload = {
+        'room_id': uuid, // Use room_id instead of uuid
+        'caller_id': int.tryParse(callerHandle) ?? 0, // Use caller_id
+        'caller_name': callerName, // Use caller_name
+        'caller_avatar': callerAvatar ?? '', // Use caller_avatar
+        'call_type': callType == 1 ? 'video' : 'audio', // Use call_type
+        'callee_id': calleeUserId,
+        // Keep old format for backward compatibility
+        'uuid': uuid,
+        'callerName': callerName,
+        'callerHandle': callerHandle,
+        'callerAvatar': callerAvatar ?? '',
+        'callType': callType.toString(),
+      };
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('Error notify incoming caller: $e');
+      return false;
+    }
+  }
+
   Future<UserModel?> getUser(int userId) async {
     try {
       final token = await _getToken();

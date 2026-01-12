@@ -133,12 +133,27 @@ class _ChatViewState extends State<ChatView> {
                         ),
                         _HeaderIcon(
                           icon: Icons.call,
-                          onTap:
-                              () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.call,
-                                arguments: chat,
-                              ),
+                          onTap: () async {
+                            if (chat == null) return;
+                            final ctrl = _controller;
+                            final calleeId = int.tryParse(chat.id ?? '');
+                            if (calleeId == null) return;
+                            final uuid =
+                                'ac_${DateTime.now().millisecondsSinceEpoch}';
+                            await ctrl.startIncomingCall(
+                              calleeUserId: calleeId,
+                              uuid: uuid,
+                              callerName: chat.name,
+                              callerHandle: chat.id ?? '',
+                              callerAvatar: chat.avatarUrl,
+                              callType: 0,
+                            );
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.call,
+                              arguments: chat,
+                            );
+                          },
                         ),
                         const SizedBox(width: 6),
                         _HeaderIcon(

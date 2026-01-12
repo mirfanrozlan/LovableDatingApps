@@ -9,6 +9,7 @@ import 'views/messages/messages_list_view.dart';
 import 'views/messages/chat_view.dart';
 import 'views/messages/calling_view.dart';
 import 'views/messages/video_call_view.dart';
+import 'views/messages/incoming_call_view.dart';
 import 'views/discover/discover_list_view.dart';
 import 'views/discover/discover_card_view.dart';
 import 'views/discover/discover_detail_view.dart';
@@ -32,6 +33,7 @@ class AppRoutes {
   static const chat = '/chat';
   static const call = '/call';
   static const videoCall = '/video-call';
+  static const incomingCall = '/incoming-call';
   static const discover = '/discover';
   static const discoverList = '/discover-list';
   static const discoverDetail = '/discover-detail';
@@ -58,6 +60,7 @@ class AppRoutes {
     chat: (_) => const ChatView(),
     call: (_) => const CallingView(),
     videoCall: (_) => const VideoCallView(),
+    incomingCall: (_) => const IncomingCallView(),
     discover: (_) => DiscoverCardView(),
     discoverList: (_) => DiscoverListView(),
     discoverDetail: (_) => const DiscoverDetailView(),

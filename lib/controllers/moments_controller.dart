@@ -52,14 +52,15 @@ class MomentsController extends ChangeNotifier {
           }
           try {
             final rawMoments = await _service.getMyMoments();
-            final mapped = rawMoments
-                .map(
-                  (m) => m.copyWith(
-                    userName: _userProfile?.name ?? m.userName,
-                    userMedia: _userProfile?.media ?? m.userMedia,
-                  ),
-                )
-                .toList();
+            final mapped =
+                rawMoments
+                    .map(
+                      (m) => m.copyWith(
+                        userName: _userProfile?.name ?? m.userName,
+                        userMedia: _userProfile?.media ?? m.userMedia,
+                      ),
+                    )
+                    .toList();
             _moments = mapped;
           } catch (e) {
             throw e;
@@ -78,14 +79,15 @@ class MomentsController extends ChangeNotifier {
           _userProfile = null;
         }
         final rawMoments = await _service.getUserMoments(targetId);
-        final mapped = rawMoments
-            .map(
-              (m) => m.copyWith(
-                userName: _userProfile?.name ?? m.userName,
-                userMedia: _userProfile?.media ?? m.userMedia,
-              ),
-            )
-            .toList();
+        final mapped =
+            rawMoments
+                .map(
+                  (m) => m.copyWith(
+                    userName: _userProfile?.name ?? m.userName,
+                    userMedia: _userProfile?.media ?? m.userMedia,
+                  ),
+                )
+                .toList();
         _moments = mapped;
       }
       if (_moments.isNotEmpty) {
@@ -123,28 +125,30 @@ class MomentsController extends ChangeNotifier {
       } else if (type == MomentsType.me) {
         more = await _service.getMyMoments();
         if (_userProfile != null) {
-          more = more
-              .map(
-                (m) => m.copyWith(
-                  userName: _userProfile!.name,
-                  userMedia: _userProfile!.media,
-                ),
-              )
-              .toList();
+          more =
+              more
+                  .map(
+                    (m) => m.copyWith(
+                      userName: _userProfile!.name,
+                      userMedia: _userProfile!.media,
+                    ),
+                  )
+                  .toList();
         }
       } else if (type == MomentsType.user) {
         final targetId = userId;
         if (targetId != null) {
           more = await _service.getUserMoments(targetId);
           if (_userProfile != null) {
-            more = more
-                .map(
-                  (m) => m.copyWith(
-                    userName: _userProfile!.name,
-                    userMedia: _userProfile!.media,
-                  ),
-                )
-                .toList();
+            more =
+                more
+                    .map(
+                      (m) => m.copyWith(
+                        userName: _userProfile!.name,
+                        userMedia: _userProfile!.media,
+                      ),
+                    )
+                    .toList();
           }
         }
       }
@@ -165,15 +169,13 @@ class MomentsController extends ChangeNotifier {
     }
   }
 
-  Future<void> likePost(int postId) async {
+  Future<void> likePost(int postId, int publisherId) async {
     try {
-      final updatedPost = await _service.likePost(postId);
+      final updatedPost = await _service.likePost(postId, publisherId);
       final index = _moments.indexWhere((m) => m.postId == postId);
       if (index != -1) {
         final current = _moments[index];
-        _moments[index] = current.copyWith(
-          postLikes: updatedPost.postLikes,
-        );
+        _moments[index] = current.copyWith(postLikes: updatedPost.postLikes);
         notifyListeners();
       }
     } catch (e) {
@@ -225,9 +227,9 @@ class MomentsController extends ChangeNotifier {
     }
   }
 
-  Future<CommentModel?> likeComment(int commentId) async {
+  Future<CommentModel?> likeComment(int commentId, int publishId) async {
     try {
-      return await _service.likeComment(commentId);
+      return await _service.likeComment(commentId, publishId);
     } catch (e) {
       print('Error liking comment: $e');
       return null;

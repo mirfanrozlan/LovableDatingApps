@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,7 +14,7 @@ class VideoCallView extends StatefulWidget {
   State<VideoCallView> createState() => _VideoCallViewState();
 }
 
-class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserver {
+class _VideoCallViewState extends State<VideoCallView> {
   final _signaling = Signaling();
   final _localRenderer = RTCVideoRenderer();
   final _remoteRenderer = RTCVideoRenderer();
@@ -24,13 +25,11 @@ class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserv
   bool _speakerOn = true;
   String _statusText = 'Preparing...';
   bool _showStatus = true;
-  int? _meId;
-  int? _otherId;
+  StreamSubscription? _roomSub;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _init();
   }
 
@@ -38,20 +37,24 @@ class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserv
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
 
-    final args =
-        ModalRoute.of(context)?.settings.arguments as ChatSummaryModel?;
+    final rawArgs = ModalRoute.of(context)?.settings.arguments;
+    final args = rawArgs is ChatSummaryModel ? rawArgs : null;
     final storage = const FlutterSecureStorage();
     final meStr = await storage.read(key: 'user_id');
-    _meId = int.tryParse(meStr ?? '');
-    _otherId = int.tryParse(args?.id ?? '');
-    if (_meId == null || _otherId == null) {
-      setState(() => _initialized = true);
-      return;
+    final meId = int.tryParse(meStr ?? '');
+    if (rawArgs is Map && rawArgs['roomId'] is String) {
+      _roomId = rawArgs['roomId'] as String;
+    } else {
+      final otherId = int.tryParse(args?.id ?? '');
+      if (meId == null || otherId == null) {
+        setState(() => _initialized = true);
+        return;
+      }
+      final a = meId <= otherId ? meId : otherId;
+      final b = meId <= otherId ? otherId : meId;
+      final roomId = 'vc_${a}_$b';
+      _roomId = roomId;
     }
-    final a = _meId! <= _otherId! ? _meId! : _otherId!;
-    final b = _meId! <= _otherId! ? _otherId! : _meId!;
-    final roomId = 'vc_${a}_$b';
-    _roomId = roomId;
 
     _signaling.onPeerConnectionState = (state) {
       if (!mounted) return;
@@ -63,7 +66,6 @@ class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserv
             RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           _statusText = 'Connected';
           _showStatus = true;
-          _setBusy(true);
           Future.delayed(const Duration(seconds: 1), () {
             if (!mounted) return;
             setState(() {
@@ -86,43 +88,33 @@ class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserv
         });
       }
     };
-    _signaling.onRemoteHangUp = () {
-      if (!mounted) return;
-      _setBusy(false);
-      Navigator.pop(context);
-    };
-
-    final busy = await _isOtherBusy();
-    if (busy) {
-      if (!mounted) return;
-      setState(() {
-        _statusText = 'User is busy';
-        _showStatus = true;
-      });
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) Navigator.pop(context);
-      });
-      return;
-    }
 
     await _signaling.openMedia(_localRenderer, _remoteRenderer);
 
-    final roomRef = FirebaseFirestore.instance.collection('rooms').doc(roomId);
+    final roomRef = FirebaseFirestore.instance
+        .collection('rooms')
+        .doc(_roomId!);
     final snap = await roomRef.get();
     if (snap.exists && (snap.data()?['offer'] != null)) {
-      await _signaling.joinRoom(roomId);
+      await _signaling.joinRoom(_roomId!);
     } else {
-      final id = await _signaling.createRoom(roomId);
+      final id = await _signaling.createRoom(_roomId!);
       _roomId = id;
     }
+    _roomSub = roomRef.snapshots().listen((snapshot) async {
+      if (!snapshot.exists) {
+        setState(() => _statusText = 'Call ended');
+        await _signaling.hangUp(_localRenderer);
+        if (mounted) Navigator.pop(context);
+      }
+    });
 
     if (mounted) setState(() => _initialized = true);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _setBusy(false);
+    _roomSub?.cancel();
     _signaling.hangUp(_localRenderer);
     _localRenderer.dispose();
     _remoteRenderer.dispose();
@@ -162,41 +154,6 @@ class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserv
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _signaling.enterBackground();
-    } else if (state == AppLifecycleState.resumed) {
-      _signaling.exitBackground();
-    }
-  }
-
-  Future<bool> _isOtherBusy() async {
-    try {
-      final oid = _otherId?.toString();
-      if (oid == null) return false;
-      final snap =
-          await FirebaseFirestore.instance.collection('users').doc(oid).get();
-      final data = snap.data() ?? {};
-      final busy = data['busy'] == true;
-      return busy;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> _setBusy(bool busy) async {
-    try {
-      final mid = _meId?.toString();
-      if (mid == null) return;
-      await FirebaseFirestore.instance.collection('users').doc(mid).set(
-        {'busy': busy},
-        SetOptions(merge: true),
-      );
-    } catch (_) {}
-  }
-
-  @override
   Widget build(BuildContext context) {
     return AppScaffold(
       child: Stack(
@@ -215,18 +172,19 @@ class _VideoCallViewState extends State<VideoCallView> with WidgetsBindingObserv
             top: 24,
             left: 24,
             right: 24,
-            child: _showStatus
-                ? Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _roomId != null ? _statusText : 'Preparing...',
-                    ),
-                  )
-                : const SizedBox.shrink(),
+            child:
+                _showStatus
+                    ? Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _roomId != null ? _statusText : 'Preparing...',
+                      ),
+                    )
+                    : const SizedBox.shrink(),
           ),
           Positioned(
             top: 80,

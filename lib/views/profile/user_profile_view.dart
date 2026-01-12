@@ -41,7 +41,10 @@ class _UserProfileViewState extends State<UserProfileView> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          title: const Text(
+            'Profile',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.black,
           elevation: 0,
@@ -66,7 +69,10 @@ class _UserProfileViewState extends State<UserProfileView> {
                         child: _ProfileHeader(
                           user: _controller.userProfile!,
                           postsCount: _controller.moments.length,
-                          totalLikes: _controller.moments.fold<int>(0, (sum, m) => sum + m.postLikes),
+                          totalLikes: _controller.moments.fold<int>(
+                            0,
+                            (sum, m) => sum + m.postLikes,
+                          ),
                         ),
                       ),
                     if (_controller.moments.isEmpty)
@@ -75,34 +81,46 @@ class _UserProfileViewState extends State<UserProfileView> {
                       ),
                     if (_controller.moments.isNotEmpty)
                       SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final moment = _controller.moments[index];
-                            return Column(
-                              children: [
-                                MomentCard(
-                                  post: moment,
-                                  onLike: () => _controller.likePost(moment.postId),
-                                  onLoadComments: () => _controller.loadComments(moment.postId),
-                                  onAddComment: (content, {parentId, replyId}) => _controller.addComment(
-                                    moment.postId,
-                                    content,
-                                    parentId: parentId,
-                                    replyId: replyId,
-                                  ),
-                                  onLikeComment: (id) => _controller.likeComment(id),
-                                  onDeleteComment: (id) => _controller.deleteComment(id, moment.postId),
-                                  onDeletePost: (postId) => _controller.deletePost(postId),
-                                  currentUserId: _controller.currentUserId,
-                                  flat: true,
-                                  controller: _controller,
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                            );
-                          },
-                          childCount: _controller.moments.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final moment = _controller.moments[index];
+                          return Column(
+                            children: [
+                              MomentCard(
+                                post: moment,
+                                onLike:
+                                    () => _controller.likePost(
+                                      moment.postId,
+                                      moment.userId,
+                                    ),
+                                onLoadComments:
+                                    () =>
+                                        _controller.loadComments(moment.postId),
+                                onAddComment:
+                                    (content, {parentId, replyId}) =>
+                                        _controller.addComment(
+                                          moment.postId,
+                                          content,
+                                          parentId: parentId,
+                                          replyId: replyId,
+                                        ),
+                                onLikeComment:
+                                    (id, {publishId}) =>
+                                        _controller.likeComment(id, publishId),
+                                onDeleteComment:
+                                    (id) => _controller.deleteComment(
+                                      id,
+                                      moment.postId,
+                                    ),
+                                onDeletePost:
+                                    (postId) => _controller.deletePost(postId),
+                                currentUserId: _controller.currentUserId,
+                                flat: true,
+                                controller: _controller,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          );
+                        }, childCount: _controller.moments.length),
                       ),
                   ],
                 ),
@@ -144,13 +162,20 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 36,
-                  backgroundImage: user.media.isNotEmpty ? NetworkImage(user.media) : null,
-                  child: user.media.isEmpty
-                      ? Text(
-                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                        )
-                      : null,
+                  backgroundImage:
+                      user.media.isNotEmpty ? NetworkImage(user.media) : null,
+                  child:
+                      user.media.isEmpty
+                          ? Text(
+                            user.name.isNotEmpty
+                                ? user.name[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -160,12 +185,20 @@ class _ProfileHeader extends StatelessWidget {
                     children: [
                       Text(
                         user.name,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${user.age}, ${user.gender} • ${user.city}, ${user.country}',
-                        style: TextStyle(color: Colors.black.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.7),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),

@@ -40,7 +40,8 @@ class MomentList extends StatelessWidget {
           },
           child: ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: controller.moments.length +
+            itemCount:
+                controller.moments.length +
                 (controller.loading && controller.hasMore ? 1 : 0),
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, i) {
@@ -56,21 +57,28 @@ class MomentList extends StatelessWidget {
               }
               return MomentCard(
                 post: controller.moments[i],
-                onLike: () => controller.likePost(controller.moments[i].postId),
+                onLike:
+                    () => controller.likePost(
+                      controller.moments[i].postId,
+                      controller.moments[i].userId,
+                    ),
                 onLoadComments:
                     () => controller.loadComments(controller.moments[i].postId),
-                onAddComment: (content, {parentId, replyId}) =>
-                    controller.addComment(
+                onAddComment:
+                    (content, {parentId, replyId}) => controller.addComment(
                       controller.moments[i].postId,
                       content,
                       parentId: parentId,
                       replyId: replyId,
                     ),
-                onLikeComment: (commentId) => controller.likeComment(commentId),
-                onDeleteComment: (commentId) => controller.deleteComment(
-                  commentId,
-                  controller.moments[i].postId,
-                ),
+                onLikeComment:
+                    (commentId, {parentId}) =>
+                        controller.likeComment(commentId, parentId),
+                onDeleteComment:
+                    (commentId) => controller.deleteComment(
+                      commentId,
+                      controller.moments[i].postId,
+                    ),
                 onDeletePost: (postId) => controller.deletePost(postId),
                 currentUserId: controller.currentUserId,
                 controller: controller,

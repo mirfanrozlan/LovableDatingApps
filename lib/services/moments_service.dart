@@ -212,7 +212,7 @@ class MomentsService {
     }
   }
 
-  Future<MomentModel> likePost(int postId) async {
+  Future<MomentModel> likePost(int postId, int publisherId) async {
     try {
       final token = await _storage.read(key: 'auth_token');
       final headers = {
@@ -224,7 +224,8 @@ class MomentsService {
         headers['Authorization'] = 'Bearer $token';
       }
 
-      final uri = Uri.https(_authority, '/api/likePost/$postId');
+      print('Liking post $postId by publisher $publisherId');
+      final uri = Uri.https(_authority, '/api/likePost/$postId/$publisherId');
       final response = await http.post(uri, headers: headers);
 
       if (response.statusCode == 200) {
@@ -324,7 +325,7 @@ class MomentsService {
     }
   }
 
-  Future<CommentModel> likeComment(int commentId) async {
+  Future<CommentModel> likeComment(int commentId, int parentId) async {
     try {
       final token = await _storage.read(key: 'auth_token');
       final headers = {'Accept': 'application/json'};
@@ -333,7 +334,10 @@ class MomentsService {
         headers['Authorization'] = 'Bearer $token';
       }
 
-      final uri = Uri.https(_authority, '/api/likeComment/$commentId');
+      final uri = Uri.https(
+        _authority,
+        '/api/likeComment/$commentId/$parentId',
+      );
       final response = await http.post(uri, headers: headers);
 
       if (response.statusCode == 200) {
@@ -426,12 +430,10 @@ class MomentsService {
         return int.tryParse(idStr);
       }
 
-      // If not found, try to decode from token
       final token = await _storage.read(key: 'auth_token');
       if (token != null) {
         final userId = _getUserIdFromToken(token);
         if (userId != null) {
-          // Store it for future use
           await _storage.write(key: 'user_id', value: userId.toString());
           return userId;
         }
@@ -464,14 +466,12 @@ class MomentsService {
       final decoded = utf8.decode(base64Url.decode(payload));
       final Map<String, dynamic> json = jsonDecode(decoded);
 
-      // Try common JWT fields for user ID
       if (json.containsKey('user_id'))
         return int.tryParse(json['user_id'].toString());
       if (json.containsKey('sub')) return int.tryParse(json['sub'].toString());
       if (json.containsKey('id')) return int.tryParse(json['id'].toString());
       if (json.containsKey('uid')) return int.tryParse(json['uid'].toString());
 
-      // If still not found, check if it's inside a 'data' or 'user' object
       if (json.containsKey('data') && json['data'] is Map) {
         final data = json['data'];
         if (data.containsKey('user_id'))
