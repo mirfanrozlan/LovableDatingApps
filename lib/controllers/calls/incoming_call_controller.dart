@@ -63,9 +63,9 @@ class IncomingCallController extends ChangeNotifier {
     }
 
     // Stop any existing call
-    if (_isRinging) {
-      await _stopRinging();
-    }
+    // if (_isRinging) {
+    //   await _stopRinging();
+    // }
 
     _callerName = callerName;
     _callUuid = callUuid;
@@ -97,30 +97,35 @@ class IncomingCallController extends ChangeNotifier {
           .doc(callUuid)
           .snapshots()
           .listen((snapshot) {
-        if (!snapshot.exists) {
-          if (kDebugMode) {
-            print('[IncomingCall] Room deleted, stopping ring');
-          }
-          _stopRinging();
-          return;
-        }
+            // if (!snapshot.exists) {
+            //   if (kDebugMode) {
+            //     print('[IncomingCall] Room deleted, stopping ring');
+            //   }
+            //   _stopRinging();
+            //   return;
+            // }
 
-        final data = snapshot.data();
-        if (data == null) return;
+            final data = snapshot.data();
+            if (data == null) return;
 
-        // Check if call was answered, rejected, or cancelled
-        final answered = data['answer'] != null;
-        final rejected = data['rejected'] == true;
-        final cancelled = data['cancelled'] == true || data['hangup'] == true || data['ended'] == true;
-        final offerRemoved = data['offer'] == null;
+            // Check if call was answered, rejected, or cancelled
+            final answered = data['answer'] != null;
+            final rejected = data['rejected'] == true;
+            final cancelled =
+                data['cancelled'] == true ||
+                data['hangup'] == true ||
+                data['ended'] == true;
+            final offerRemoved = data['offer'] == null;
 
-        if (answered || rejected || cancelled || offerRemoved) {
-          if (kDebugMode) {
-            print('[IncomingCall] Call ended (answered: $answered, rejected: $rejected, cancelled: $cancelled)');
-          }
-          _stopRinging();
-        }
-      });
+            if (answered || rejected || cancelled || offerRemoved) {
+              if (kDebugMode) {
+                print(
+                  '[IncomingCall] Call ended (answered: $answered, rejected: $rejected, cancelled: $cancelled)',
+                );
+              }
+              _stopRinging();
+            }
+          });
 
       // Set timeout to auto-decline after 30 seconds
       _timeoutTimer?.cancel();
@@ -131,15 +136,16 @@ class IncomingCallController extends ChangeNotifier {
         decline();
       });
     } catch (e) {
-      if (kDebugMode) {
-        print('[IncomingCall] Start ringing error: $e');
-      }
-      _stopRinging();
+      // if (kDebugMode) {
+      //   print('[IncomingCall] Start ringing error: $e');
+      // }
+      // _stopRinging();
     }
   }
 
   /// Accept call from CallKit notification
   /// Called when user taps "Accept" on native call UI
+  /// Routes to calling_view.dart (audio) or video_call_view.dart (video)
   Future<void> acceptFromCallKit(String roomId) async {
     if (!_isRinging) {
       if (kDebugMode) {
@@ -150,9 +156,16 @@ class IncomingCallController extends ChangeNotifier {
 
     if (kDebugMode) {
       print('[IncomingCall] Accepting call from CallKit: $roomId');
+      print('[IncomingCall] Is video call: $_isVideo');
+      if (_isVideo) {
+        print('[IncomingCall] Will navigate to video_call_view.dart');
+      } else {
+        print('[IncomingCall] Will navigate to calling_view.dart');
+      }
     }
 
-    await _acceptCall(roomId);
+    // Accept call and navigate (navigation handled in _acceptCall)
+    await _acceptCall(roomId, navigate: true);
   }
 
   /// Accept call from in-app UI
@@ -167,20 +180,16 @@ class IncomingCallController extends ChangeNotifier {
 
     if (kDebugMode) {
       print('[IncomingCall] Accepting call from app: $_roomId');
+      print('[IncomingCall] Is video call: $_isVideo');
     }
 
-    await _acceptCall(_roomId!);
-    
-    // Navigate to call screen
-    if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed(
-        _isVideo ? AppRoutes.videoCall : AppRoutes.call,
-      );
-    }
+    // Accept call and navigate (navigation handled in _acceptCall)
+    await _acceptCall(_roomId!, navigate: true);
   }
 
   /// Internal method to handle call acceptance
-  Future<void> _acceptCall(String roomId) async {
+  /// [navigate] - Whether to navigate to call screen (default: true)
+  Future<void> _acceptCall(String roomId, {bool navigate = true}) async {
     try {
       // Stop ringing
       await _stopRinging();
@@ -199,10 +208,29 @@ class IncomingCallController extends ChangeNotifier {
       // Join the room using caller's offer
       await _signaling.joinRoom(roomId);
 
-      // Navigate to call screen using navigator key
-      appNavigatorKey.currentState?.pushReplacementNamed(
-        _isVideo ? AppRoutes.videoCall : AppRoutes.call,
-      );
+      // Navigate to call screen if requested
+      if (navigate) {
+        final nav = appNavigatorKey.currentState;
+        if (nav != null) {
+          if (_isVideo) {
+            if (kDebugMode) {
+              print('[IncomingCall] Navigating to video_call_view.dart');
+            }
+            nav.pushReplacementNamed(
+              AppRoutes.videoCall,
+              arguments: {'roomId': roomId, 'isIncoming': true},
+            );
+          } else {
+            if (kDebugMode) {
+              print('[IncomingCall] Navigating to calling_view.dart');
+            }
+            nav.pushReplacementNamed(
+              AppRoutes.call,
+              arguments: {'roomId': roomId, 'isIncoming': true},
+            );
+          }
+        }
+      }
 
       if (kDebugMode) {
         print('[IncomingCall] Call accepted successfully');
@@ -214,9 +242,9 @@ class IncomingCallController extends ChangeNotifier {
       // Show error to user (if context is available)
       final context = appNavigatorKey.currentContext;
       if (context != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to accept call: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to accept call: $e')));
       }
     }
   }
@@ -257,6 +285,18 @@ class IncomingCallController extends ChangeNotifier {
     try {
       // Stop ringing
       await _stopRinging();
+
+      // Call hangup in signaling to clean up WebRTC resources
+      try {
+        await _signaling.hangUp();
+        if (kDebugMode) {
+          print('[IncomingCall] Signaling hangup called');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('[IncomingCall] Hangup error (non-critical): $e');
+        }
+      }
 
       // Notify backend that call was rejected
       await _notifyBackendCallRejected(roomId);
@@ -328,17 +368,17 @@ class IncomingCallController extends ChangeNotifier {
       final userId = await _storage.read(key: 'user_id');
       if (userId == null) return;
 
-      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/notify/call-accepted');
+      final uri = Uri.https(
+        'demo.mazri-minecraft.xyz',
+        '/api/notify/call-accepted',
+      );
       await http.post(
         uri,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'room_id': roomId,
-          'user_id': userId,
-        }),
+        body: jsonEncode({'room_id': roomId, 'user_id': userId}),
       );
 
       if (kDebugMode) {
@@ -360,17 +400,17 @@ class IncomingCallController extends ChangeNotifier {
       final userId = await _storage.read(key: 'user_id');
       if (userId == null) return;
 
-      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/notify/call-rejected');
+      final uri = Uri.https(
+        'demo.mazri-minecraft.xyz',
+        '/api/notify/call-rejected',
+      );
       await http.post(
         uri,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'room_id': roomId,
-          'user_id': userId,
-        }),
+        body: jsonEncode({'room_id': roomId, 'user_id': userId}),
       );
 
       if (kDebugMode) {

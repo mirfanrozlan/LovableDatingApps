@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_callkit_incoming/entities/entities.dart';
 import '../controllers/calls/incoming_call_controller.dart';
@@ -48,36 +49,64 @@ class CallKitService {
 
       final body = event.body ?? {};
       final extra = (body['extra'] as Map?)?.cast<dynamic, dynamic>() ?? {};
-      
+
       // Extract call information
-      final callUuid = body['id']?.toString() ?? extra['call_uuid']?.toString() ?? '';
+      final callUuid =
+          body['id']?.toString() ?? extra['call_uuid']?.toString() ?? '';
       final roomId = extra['room_id']?.toString() ?? callUuid;
       final isVideo = extra['isVideo'] == true || extra['call_type'] == 'video';
-      
+
       // Normalize event name
       final eventName = event.event.toString().toUpperCase();
-      
+
       switch (eventName) {
-        case 'ACTION_CALL_ACCEPT':
         case 'CALL_ACCEPT':
+        case 'ACTION_CALL_ACCEPT':
           if (kDebugMode) {
-            print('[CallKit] Call accepted: $roomId');
+            print('[CallKit] CALL_ACCEPT event received');
+            print('[CallKit] Room ID: $roomId');
+            print('[CallKit] Is video call: $isVideo');
+            if (isVideo) {
+              print('[CallKit] Will navigate to video_call_view.dart');
+            } else {
+              print('[CallKit] Will navigate to calling_view.dart');
+            }
           }
           IncomingCallController.instance.setIsVideo(isVideo);
+          await Future.delayed(Duration(seconds: 10));
           await IncomingCallController.instance.acceptFromCallKit(roomId);
           break;
 
         case 'ACTION_CALL_DECLINE':
-        case 'ACTION_CALL_ENDED':
         case 'ACTION_CALL_TIMEOUT':
         case 'CALL_DECLINE':
         case 'CALL_ENDED':
         case 'CALL_TIMEOUT':
+        case 'ACTION_CALL_ENDED':
           if (kDebugMode) {
-            print('[CallKit] Call declined/ended: $roomId');
+            print('[CallKit] Decline/Timeout/End event received: $eventName');
+            print('[CallKit] Room ID: $roomId');
+            print('[CallKit] Will call hangup in signaling.dart');
           }
           IncomingCallController.instance.setIsVideo(isVideo);
           await IncomingCallController.instance.declineFromCallKit(roomId);
+
+          // Ensure navigation context is available before redirecting
+          final navigatorKey = GlobalKey<NavigatorState>();
+          final context = navigatorKey.currentState?.context;
+          if (context != null) {
+            // Explicitly navigate to discover page using the provided BuildContext
+            Navigator.pushReplacementNamed(context, '/discover');
+
+            // Optional: Add a brief delay to ensure route is processed
+            await Future.delayed(Duration(milliseconds: 300));
+          } else {
+            if (kDebugMode) {
+              print(
+                '[CallKit] Navigation Context unavailable - cannot redirect to discover page',
+              );
+            }
+          }
           break;
 
         default:
@@ -107,7 +136,8 @@ class CallKitService {
       });
 
       // Request full-screen intent permission (Android 12+)
-      final canUseFullScreenIntent = await FlutterCallkitIncoming.canUseFullScreenIntent();
+      final canUseFullScreenIntent =
+          await FlutterCallkitIncoming.canUseFullScreenIntent();
       if (canUseFullScreenIntent != true) {
         await FlutterCallkitIncoming.requestFullIntentPermission();
       }
@@ -123,7 +153,7 @@ class CallKitService {
   }
 
   /// Show incoming call notification with native CallKit UI
-  /// 
+  ///
   /// [callerName] - Name of the caller
   /// [callUuid] - Unique identifier for the call (used as room_id)
   /// [callerId] - ID of the caller
@@ -159,10 +189,12 @@ class CallKitService {
           'isVideo': isVideo,
           'call_type': isVideo ? 'video' : 'audio',
         },
+
         android: const AndroidParams(
           isCustomNotification: true,
           isShowLogo: true,
-          ringtonePath: 'system_ringtone_default',
+
+          ringtonePath: null, // Let system handle ringtone
           backgroundColor: '#0C1B2A',
           actionColor: '#4CAF50',
         ),
@@ -187,7 +219,7 @@ class CallKitService {
   }
 
   /// End/dismiss an incoming call notification
-  /// 
+  ///
   /// [callUuid] - UUID of the call to end. If empty, ends all calls.
   static Future<void> endCall(String callUuid) async {
     if (kIsWeb) return;

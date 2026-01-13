@@ -18,10 +18,12 @@ class IncomingCallWatcher {
     try {
       final idStr = await _storage.read(key: 'user_id');
       final uid = int.tryParse(idStr ?? '');
-      
+
       if (uid == null) {
         if (kDebugMode) {
-          print('[IncomingCallWatcher] No user ID found, cannot start watching');
+          print(
+            '[IncomingCallWatcher] No user ID found, cannot start watching',
+          );
         }
         return;
       }
@@ -36,61 +38,69 @@ class IncomingCallWatcher {
           .where('offer', isNotEqualTo: null)
           .snapshots()
           .listen(
-        (snapshot) {
-          try {
-            for (final change in snapshot.docChanges) {
-              if (change.type == DocumentChangeType.added ||
-                  change.type == DocumentChangeType.modified) {
-                final data = change.doc.data();
-                if (data == null) continue;
+            (snapshot) {
+              try {
+                for (final change in snapshot.docChanges) {
+                  if (change.type == DocumentChangeType.added ||
+                      change.type == DocumentChangeType.modified) {
+                    final data = change.doc.data();
+                    if (data == null) continue;
 
-                // Skip if already answered or rejected
-                final answered = data['answer'] != null;
-                final rejected = data['rejected'] == true;
-                final cancelled = data['cancelled'] == true || data['hangup'] == true;
+                    // Skip if already answered or rejected
+                    final answered = data['answer'] != null;
+                    final rejected = data['rejected'] == true;
+                    final cancelled =
+                        data['cancelled'] == true || data['hangup'] == true;
 
-                if (answered || rejected || cancelled) {
-                  continue;
+                    if (answered || rejected || cancelled) {
+                      continue;
+                    }
+
+                    // Extract call information
+                    final roomId = change.doc.id;
+                    final callerName =
+                        (data['caller_name'] ?? 'Unknown') as String;
+                    final callerId = (data['caller_id'] ?? '').toString();
+                    final avatar = data['caller_avatar'] as String?;
+                    final isVideo = (data['video'] == true);
+
+                    if (kDebugMode) {
+                      print(
+                        '[IncomingCallWatcher] New incoming call detected: $roomId',
+                      );
+                    }
+
+                    // Start ringing
+                    IncomingCallController.instance.startRinging(
+                      callerName: callerName,
+                      callUuid: roomId,
+                      callerId: callerId,
+                      avatarUrl: avatar,
+                      isVideo: isVideo,
+                    );
+                  }
                 }
-
-                // Extract call information
-                final roomId = change.doc.id;
-                final callerName = (data['caller_name'] ?? 'Unknown') as String;
-                final callerId = (data['caller_id'] ?? '').toString();
-                final avatar = data['caller_avatar'] as String?;
-                final isVideo = (data['video'] == true);
-
+              } catch (e) {
                 if (kDebugMode) {
-                  print('[IncomingCallWatcher] New incoming call detected: $roomId');
+                  print('[IncomingCallWatcher] Error processing snapshot: $e');
                 }
-
-                // Start ringing
-                IncomingCallController.instance.startRinging(
-                  callerName: callerName,
-                  callUuid: roomId,
-                  callerId: callerId,
-                  avatarUrl: avatar,
-                  isVideo: isVideo,
+              }
+            },
+            onError: (error) {
+              if (kDebugMode) {
+                print('[IncomingCallWatcher] Stream error: $error');
+                print(
+                  '[IncomingCallWatcher] This is usually a network connectivity issue.',
+                );
+                print(
+                  '[IncomingCallWatcher] FCM notifications will still work independently.',
                 );
               }
-            }
-          } catch (e) {
-            if (kDebugMode) {
-              print('[IncomingCallWatcher] Error processing snapshot: $e');
-            }
-          }
-        },
-        onError: (error) {
-          if (kDebugMode) {
-            print('[IncomingCallWatcher] Stream error: $error');
-            print('[IncomingCallWatcher] This is usually a network connectivity issue.');
-            print('[IncomingCallWatcher] FCM notifications will still work independently.');
-          }
-          // Don't throw - let FCM handle notifications
-          // Firestore watcher is just a backup mechanism
-        },
-        cancelOnError: false, // Keep listening even on errors
-      );
+              // Don't throw - let FCM handle notifications
+              // Firestore watcher is just a backup mechanism
+            },
+            cancelOnError: false, // Keep listening even on errors
+          );
 
       if (kDebugMode) {
         print('[IncomingCallWatcher] Started watching for user: $uid');
@@ -106,7 +116,7 @@ class IncomingCallWatcher {
   Future<void> stop() async {
     await _subscription?.cancel();
     _subscription = null;
-    
+
     if (kDebugMode) {
       print('[IncomingCallWatcher] Stopped watching');
     }

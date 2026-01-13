@@ -141,12 +141,29 @@ void main() async {
 
     await _handleIncomingCallMessage(message.data);
     
-    // Navigate to incoming call screen if app is in foreground
+    // Navigate to call screen if app is in foreground
+    // Use existing calling_view.dart for incoming calls
     final type = message.data['type']?.toString() ?? '';
     if (type == 'incoming_call' || type == 'incoming_video_call' || message.data.containsKey('call_uuid')) {
       final nav = appNavigatorKey.currentState;
       if (nav != null) {
-        nav.pushNamed(AppRoutes.incomingCall);
+        final callUuid = message.data['call_uuid']?.toString() ?? 
+                         message.data['room_id']?.toString() ?? 
+                         message.data['uuid']?.toString() ?? '';
+        final isVideo = type == 'incoming_video_call' || 
+                       message.data['call_type'] == 'video' || 
+                       (message.data['video'] == true) ||
+                       (message.data['video'] == 'true') ||
+                       (message.data['callType']?.toString() == '1');
+        
+        // Navigate to appropriate call view with roomId
+        if (callUuid.isNotEmpty) {
+          if (isVideo) {
+            nav.pushNamed(AppRoutes.videoCall, arguments: {'roomId': callUuid, 'isIncoming': true});
+          } else {
+            nav.pushNamed(AppRoutes.call, arguments: {'roomId': callUuid, 'isIncoming': true});
+          }
+        }
       }
     }
   });
@@ -170,11 +187,29 @@ void main() async {
 
     await _handleIncomingCallMessage(message.data);
     
-    // Navigate to incoming call screen
+    // Navigate to call screen (use existing calling_view.dart)
     final type = message.data['type']?.toString() ?? '';
     if (type == 'incoming_call' || type == 'incoming_video_call' || message.data.containsKey('call_uuid')) {
       final nav = appNavigatorKey.currentState;
-      nav?.pushNamed(AppRoutes.incomingCall);
+      if (nav != null) {
+        final callUuid = message.data['call_uuid']?.toString() ?? 
+                         message.data['room_id']?.toString() ?? 
+                         message.data['uuid']?.toString() ?? '';
+        final isVideo = type == 'incoming_video_call' || 
+                       message.data['call_type'] == 'video' || 
+                       (message.data['video'] == true) ||
+                       (message.data['video'] == 'true') ||
+                       (message.data['callType']?.toString() == '1');
+        
+        // Navigate to appropriate call view with roomId
+        if (callUuid.isNotEmpty) {
+          if (isVideo) {
+            nav.pushNamed(AppRoutes.videoCall, arguments: {'roomId': callUuid, 'isIncoming': true});
+          } else {
+            nav.pushNamed(AppRoutes.call, arguments: {'roomId': callUuid, 'isIncoming': true});
+          }
+        }
+      }
     }
   });
 
