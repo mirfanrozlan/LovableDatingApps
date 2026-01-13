@@ -78,9 +78,7 @@ class _CallingViewState extends State<CallingView> {
 
     _roomSub = roomRef.snapshots().listen((snapshot) async {
       if (!snapshot.exists) {
-        setState(() => _statusText = 'Call ended');
-        await _signaling.hangUp(_localRenderer);
-        if (mounted) Navigator.pop(context);
+        setState(() => _statusText = 'Nobody in this call');
       }
     });
   }

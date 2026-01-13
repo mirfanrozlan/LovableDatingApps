@@ -38,22 +38,8 @@ class _VideoCallViewState extends State<VideoCallView> {
     await _remoteRenderer.initialize();
 
     final rawArgs = ModalRoute.of(context)?.settings.arguments;
-    final args = rawArgs is ChatSummaryModel ? rawArgs : null;
-    final storage = const FlutterSecureStorage();
-    final meStr = await storage.read(key: 'user_id');
-    final meId = int.tryParse(meStr ?? '');
     if (rawArgs is Map && rawArgs['roomId'] is String) {
       _roomId = rawArgs['roomId'] as String;
-    } else {
-      final otherId = int.tryParse(args?.id ?? '');
-      if (meId == null || otherId == null) {
-        setState(() => _initialized = true);
-        return;
-      }
-      final a = meId <= otherId ? meId : otherId;
-      final b = meId <= otherId ? otherId : meId;
-      final roomId = 'vc_${a}_$b';
-      _roomId = roomId;
     }
 
     _signaling.onPeerConnectionState = (state) {
@@ -98,15 +84,10 @@ class _VideoCallViewState extends State<VideoCallView> {
     if (snap.exists && (snap.data()?['offer'] != null)) {
       await _signaling.joinRoom(_roomId!);
     }
-    // else {
-    //   final id = await _signaling.createRoom(_roomId!);
-    //   _roomId = id;
-    // }
+
     _roomSub = roomRef.snapshots().listen((snapshot) async {
       if (!snapshot.exists) {
-        setState(() => _statusText = 'Call ended');
-        await _signaling.hangUp(_localRenderer);
-        if (mounted) Navigator.pop(context);
+        setState(() => _statusText = 'Nobody in this call');
       }
     });
 

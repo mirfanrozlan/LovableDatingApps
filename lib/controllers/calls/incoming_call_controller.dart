@@ -63,13 +63,13 @@ class IncomingCallController extends ChangeNotifier {
     }
 
     // Stop any existing call
-    // if (_isRinging) {
-    //   await _stopRinging();
-    // }
+    if (_isRinging) {
+      await _stopRinging();
+    }
 
     _callerName = callerName;
     _callUuid = callUuid;
-    _roomId = callUuid; // room_id is same as call_uuid
+    _roomId = callUuid;
     _callerId = callerId;
     _avatarUrl = avatarUrl;
     _isVideo = isVideo;
@@ -204,6 +204,7 @@ class IncomingCallController extends ChangeNotifier {
           if (_isVideo) {
             if (kDebugMode) {
               print('[IncomingCall] Navigating to video_call_view.dart');
+              print('[IncomingCall] Is video call: $_isVideo');
             }
             nav.pushReplacementNamed(
               AppRoutes.videoCall,

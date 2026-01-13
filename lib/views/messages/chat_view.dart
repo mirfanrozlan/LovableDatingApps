@@ -62,6 +62,35 @@ class _ChatViewState extends State<ChatView> {
     _controller.setTyping(_chatId!, false);
   }
 
+  Future<void> initCall(ChatSummaryModel? chat, int vidType) async {
+    if (chat == null) return;
+    final ctrl = _controller;
+    final calleeId = int.tryParse(chat.id ?? '');
+    final meId = await FlutterSecureStorage()
+        .read(key: 'user_id')
+        .then((v) => int.tryParse(v ?? ''));
+
+    if (calleeId == null) return;
+    if (meId == null) {
+      return;
+    }
+
+    final a = meId <= calleeId ? meId : calleeId;
+    final b = meId <= calleeId ? calleeId : meId;
+    final roomId = 'vc_${a}_${b}_${DateTime.now().millisecondsSinceEpoch}';
+
+    await _signaling.createRoom(roomId);
+
+    await ctrl.startIncomingCall(
+      calleeUserId: calleeId,
+      uuid: roomId,
+      callerName: chat.name,
+      callerHandle: chat.id ?? '',
+      callerAvatar: chat.avatarUrl,
+      callType: vidType,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chat =
@@ -137,34 +166,7 @@ class _ChatViewState extends State<ChatView> {
                         _HeaderIcon(
                           icon: Icons.call,
                           onTap: () async {
-                            if (chat == null) return;
-                            final ctrl = _controller;
-                            final calleeId = int.tryParse(chat.id ?? '');
-                            final meId = await FlutterSecureStorage()
-                                .read(key: 'user_id')
-                                .then((v) => int.tryParse(v ?? ''));
-
-                            if (calleeId == null) return;
-                            if (meId == null) {
-                              return;
-                            }
-
-                            final a = meId <= calleeId ? meId : calleeId;
-                            final b = meId <= calleeId ? calleeId : meId;
-                            final roomId =
-                                'vc_${a}_${b}_${DateTime.now().millisecondsSinceEpoch}';
-
-                            await _signaling.createRoom(roomId);
-
-                            await ctrl.startIncomingCall(
-                              calleeUserId: calleeId,
-                              uuid: roomId,
-                              callerName: chat.name,
-                              callerHandle: chat.id ?? '',
-                              callerAvatar: chat.avatarUrl,
-                              callType: 0,
-                            );
-
+                            await initCall(chat, 0);
                             Navigator.pushNamed(
                               context,
                               AppRoutes.call,
@@ -175,12 +177,15 @@ class _ChatViewState extends State<ChatView> {
                         const SizedBox(width: 6),
                         _HeaderIcon(
                           icon: Icons.videocam,
-                          onTap:
-                              () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.videoCall,
-                                arguments: chat,
-                              ),
+                          onTap: () async {
+                            await initCall(chat, 1);
+
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.videoCall,
+                              arguments: chat,
+                            );
+                          },
                         ),
                         const SizedBox(width: 6),
                         _HeaderIcon(icon: Icons.more_vert, onTap: () {}),
