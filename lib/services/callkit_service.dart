@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_callkit_incoming/entities/entities.dart';
 import '../controllers/calls/incoming_call_controller.dart';
@@ -60,8 +59,9 @@ class CallKitService {
       final eventName = event.event.toString().toUpperCase();
 
       switch (eventName) {
-        case 'CALL_ACCEPT':
-        case 'ACTION_CALL_ACCEPT':
+        case 'EVENT.CALLACCEPT':
+        case 'EVENT.ACTIONCALLACCEPT':
+        case 'EVENT.ACTIONCALLENDED':
           if (kDebugMode) {
             print('[CallKit] CALL_ACCEPT event received');
             print('[CallKit] Room ID: $roomId');
@@ -73,16 +73,14 @@ class CallKitService {
             }
           }
           IncomingCallController.instance.setIsVideo(isVideo);
-          await Future.delayed(Duration(seconds: 10));
           await IncomingCallController.instance.acceptFromCallKit(roomId);
           break;
 
-        case 'ACTION_CALL_DECLINE':
-        case 'ACTION_CALL_TIMEOUT':
-        case 'CALL_DECLINE':
-        case 'CALL_ENDED':
-        case 'CALL_TIMEOUT':
-        case 'ACTION_CALL_ENDED':
+        case 'EVENT.ACTIONCALLDECLINE':
+        case 'EVENT.ACTIONCALLTIMEOUT':
+        case 'EVENT.CALLDECLINE':
+        case 'EVENT.CALLENDED':
+        case 'EVENT.CALLTIMEOUT':
           if (kDebugMode) {
             print('[CallKit] Decline/Timeout/End event received: $eventName');
             print('[CallKit] Room ID: $roomId');
@@ -90,23 +88,6 @@ class CallKitService {
           }
           IncomingCallController.instance.setIsVideo(isVideo);
           await IncomingCallController.instance.declineFromCallKit(roomId);
-
-          // Ensure navigation context is available before redirecting
-          final navigatorKey = GlobalKey<NavigatorState>();
-          final context = navigatorKey.currentState?.context;
-          if (context != null) {
-            // Explicitly navigate to discover page using the provided BuildContext
-            Navigator.pushReplacementNamed(context, '/discover');
-
-            // Optional: Add a brief delay to ensure route is processed
-            await Future.delayed(Duration(milliseconds: 300));
-          } else {
-            if (kDebugMode) {
-              print(
-                '[CallKit] Navigation Context unavailable - cannot redirect to discover page',
-              );
-            }
-          }
           break;
 
         default:

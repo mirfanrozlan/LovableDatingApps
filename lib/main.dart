@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 /// Background FCM message handler
 /// This runs in a separate isolate when app is terminated
 @pragma('vm:entry-point')
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -33,24 +34,30 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> _handleIncomingCallMessage(Map<String, dynamic> data) async {
   try {
     final type = data['type']?.toString() ?? '';
-    
-    if (type == 'incoming_call' || type == 'incoming_video_call' || data.containsKey('call_uuid')) {
-      final callUuid = data['call_uuid']?.toString() ?? 
-                      data['room_id']?.toString() ?? 
-                      data['uuid']?.toString() ?? '';
-      final callerName = data['caller_name']?.toString() ?? 
-                        data['callerName']?.toString() ?? 
-                        'Unknown';
-      final callerId = data['caller_id']?.toString() ?? 
-                       data['callerId']?.toString() ?? 
-                       '';
-      final avatarUrl = data['avatar']?.toString() ?? 
-                       data['callerAvatar']?.toString() ?? 
-                       data['caller_avatar']?.toString();
-      final isVideo = type == 'incoming_video_call' || 
-                     data['call_type'] == 'video' || 
-                     (data['video'] == true) ||
-                     (data['callType']?.toString() == '1');
+
+    if (type == 'incoming_call' ||
+        type == 'incoming_video_call' ||
+        data.containsKey('call_uuid')) {
+      final callUuid =
+          data['call_uuid']?.toString() ??
+          data['room_id']?.toString() ??
+          data['uuid']?.toString() ??
+          '';
+      final callerName =
+          data['caller_name']?.toString() ??
+          data['callerName']?.toString() ??
+          'Unknown';
+      final callerId =
+          data['caller_id']?.toString() ?? data['callerId']?.toString() ?? '';
+      final avatarUrl =
+          data['avatar']?.toString() ??
+          data['callerAvatar']?.toString() ??
+          data['caller_avatar']?.toString();
+      final isVideo =
+          type == 'incoming_video_call' ||
+          data['call_type'] == 'video' ||
+          (data['video'] == true) ||
+          (data['callType']?.toString() == '1');
 
       if (callUuid.isEmpty) {
         if (kDebugMode) {
@@ -72,10 +79,12 @@ Future<void> _handleIncomingCallMessage(Map<String, dynamic> data) async {
         print('[FCM] Incoming call handled: $callUuid from $callerName');
       }
     } else if (type == 'call_cancelled' || type == 'incoming_call_cancelled') {
-      final callUuid = data['call_uuid']?.toString() ?? 
-                      data['room_id']?.toString() ?? 
-                      data['uuid']?.toString() ?? '';
-      
+      final callUuid =
+          data['call_uuid']?.toString() ??
+          data['room_id']?.toString() ??
+          data['uuid']?.toString() ??
+          '';
+
       if (callUuid.isNotEmpty) {
         await CallKitService.endCall(callUuid);
         if (kDebugMode) {
@@ -140,30 +149,35 @@ void main() async {
     }
 
     await _handleIncomingCallMessage(message.data);
-    
+
     // Navigate to call screen if app is in foreground
     // Use existing calling_view.dart for incoming calls
     final type = message.data['type']?.toString() ?? '';
-    if (type == 'incoming_call' || type == 'incoming_video_call' || message.data.containsKey('call_uuid')) {
+    if (type == 'incoming_call' ||
+        type == 'incoming_video_call' ||
+        message.data.containsKey('call_uuid')) {
       final nav = appNavigatorKey.currentState;
       if (nav != null) {
-        final callUuid = message.data['call_uuid']?.toString() ?? 
-                         message.data['room_id']?.toString() ?? 
-                         message.data['uuid']?.toString() ?? '';
-        final isVideo = type == 'incoming_video_call' || 
-                       message.data['call_type'] == 'video' || 
-                       (message.data['video'] == true) ||
-                       (message.data['video'] == 'true') ||
-                       (message.data['callType']?.toString() == '1');
-        
+        final callUuid =
+            message.data['call_uuid']?.toString() ??
+            message.data['room_id']?.toString() ??
+            message.data['uuid']?.toString() ??
+            '';
+        final isVideo =
+            type == 'incoming_video_call' ||
+            message.data['call_type'] == 'video' ||
+            (message.data['video'] == true) ||
+            (message.data['video'] == 'true') ||
+            (message.data['callType']?.toString() == '1');
+
         // Navigate to appropriate call view with roomId
-        if (callUuid.isNotEmpty) {
-          if (isVideo) {
-            nav.pushNamed(AppRoutes.videoCall, arguments: {'roomId': callUuid, 'isIncoming': true});
-          } else {
-            nav.pushNamed(AppRoutes.call, arguments: {'roomId': callUuid, 'isIncoming': true});
-          }
-        }
+        // if (callUuid.isNotEmpty) {
+        //   if (isVideo) {
+        //     nav.pushNamed(AppRoutes.videoCall, arguments: {'roomId': callUuid, 'isIncoming': true});
+        //   } else {
+        //     nav.pushNamed(AppRoutes.call, arguments: {'roomId': callUuid, 'isIncoming': true});
+        //   }
+        // }
       }
     }
   });
@@ -186,27 +200,38 @@ void main() async {
     }
 
     await _handleIncomingCallMessage(message.data);
-    
+
     // Navigate to call screen (use existing calling_view.dart)
     final type = message.data['type']?.toString() ?? '';
-    if (type == 'incoming_call' || type == 'incoming_video_call' || message.data.containsKey('call_uuid')) {
+    if (type == 'incoming_call' ||
+        type == 'incoming_video_call' ||
+        message.data.containsKey('call_uuid')) {
       final nav = appNavigatorKey.currentState;
       if (nav != null) {
-        final callUuid = message.data['call_uuid']?.toString() ?? 
-                         message.data['room_id']?.toString() ?? 
-                         message.data['uuid']?.toString() ?? '';
-        final isVideo = type == 'incoming_video_call' || 
-                       message.data['call_type'] == 'video' || 
-                       (message.data['video'] == true) ||
-                       (message.data['video'] == 'true') ||
-                       (message.data['callType']?.toString() == '1');
-        
+        final callUuid =
+            message.data['call_uuid']?.toString() ??
+            message.data['room_id']?.toString() ??
+            message.data['uuid']?.toString() ??
+            '';
+        final isVideo =
+            type == 'incoming_video_call' ||
+            message.data['call_type'] == 'video' ||
+            (message.data['video'] == true) ||
+            (message.data['video'] == 'true') ||
+            (message.data['callType']?.toString() == '1');
+
         // Navigate to appropriate call view with roomId
         if (callUuid.isNotEmpty) {
           if (isVideo) {
-            nav.pushNamed(AppRoutes.videoCall, arguments: {'roomId': callUuid, 'isIncoming': true});
+            nav.pushNamed(
+              AppRoutes.videoCall,
+              arguments: {'roomId': callUuid, 'isIncoming': true},
+            );
           } else {
-            nav.pushNamed(AppRoutes.call, arguments: {'roomId': callUuid, 'isIncoming': true});
+            nav.pushNamed(
+              AppRoutes.call,
+              arguments: {'roomId': callUuid, 'isIncoming': true},
+            );
           }
         }
       }

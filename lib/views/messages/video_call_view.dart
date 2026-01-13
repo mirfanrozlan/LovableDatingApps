@@ -97,10 +97,11 @@ class _VideoCallViewState extends State<VideoCallView> {
     final snap = await roomRef.get();
     if (snap.exists && (snap.data()?['offer'] != null)) {
       await _signaling.joinRoom(_roomId!);
-    } else {
-      final id = await _signaling.createRoom(_roomId!);
-      _roomId = id;
     }
+    // else {
+    //   final id = await _signaling.createRoom(_roomId!);
+    //   _roomId = id;
+    // }
     _roomSub = roomRef.snapshots().listen((snapshot) async {
       if (!snapshot.exists) {
         setState(() => _statusText = 'Call ended');

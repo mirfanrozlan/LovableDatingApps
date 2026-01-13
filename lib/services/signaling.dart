@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:mobile/routes.dart';
+import 'package:flutter/material.dart';
 import 'dart:convert';
+import '../navigation.dart';
 
 class Signaling {
   Map<String, dynamic> configuration = {
@@ -220,6 +224,11 @@ class Signaling {
       }
 
       await roomRef.delete();
+      appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/discover',
+        (route) => false,
+      );
+      await Future.delayed(Duration(milliseconds: 500));
     }
   }
 

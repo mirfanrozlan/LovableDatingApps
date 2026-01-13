@@ -197,17 +197,6 @@ class IncomingCallController extends ChangeNotifier {
       // Notify backend that call was accepted
       await _notifyBackendCallAccepted(roomId);
 
-      // Open media (camera/microphone)
-      await _signaling.openMedia(
-        RTCVideoRenderer(),
-        RTCVideoRenderer(),
-        video: _isVideo,
-        audio: true,
-      );
-
-      // Join the room using caller's offer
-      await _signaling.joinRoom(roomId);
-
       // Navigate to call screen if requested
       if (navigate) {
         final nav = appNavigatorKey.currentState;
@@ -224,6 +213,7 @@ class IncomingCallController extends ChangeNotifier {
             if (kDebugMode) {
               print('[IncomingCall] Navigating to calling_view.dart');
             }
+
             nav.pushReplacementNamed(
               AppRoutes.call,
               arguments: {'roomId': roomId, 'isIncoming': true},
@@ -239,6 +229,7 @@ class IncomingCallController extends ChangeNotifier {
       if (kDebugMode) {
         print('[IncomingCall] Accept call error: $e');
       }
+
       // Show error to user (if context is available)
       final context = appNavigatorKey.currentContext;
       if (context != null) {
@@ -255,6 +246,7 @@ class IncomingCallController extends ChangeNotifier {
     if (kDebugMode) {
       print('[IncomingCall] Declining call from CallKit: $roomId');
     }
+
     await _declineCall(roomId);
   }
 
@@ -288,7 +280,6 @@ class IncomingCallController extends ChangeNotifier {
 
       // Call hangup in signaling to clean up WebRTC resources
       try {
-        await _signaling.hangUp();
         if (kDebugMode) {
           print('[IncomingCall] Signaling hangup called');
         }

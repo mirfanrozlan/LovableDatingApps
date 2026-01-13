@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:async';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
@@ -7,6 +8,7 @@ import '../../controllers/messages/messages_controller.dart';
 import '../../models/messages/chat_summary_model.dart';
 import '../../themes/theme.dart';
 import '../../routes.dart';
+import '../../services/signaling.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({super.key});
@@ -18,6 +20,7 @@ class ChatView extends StatefulWidget {
 class _ChatViewState extends State<ChatView> {
   late final MessagesController _controller;
   final _input = TextEditingController();
+  final _signaling = Signaling();
   final _scrollController = ScrollController();
   String? _chatId;
   Timer? _typingTimer;
@@ -137,17 +140,31 @@ class _ChatViewState extends State<ChatView> {
                             if (chat == null) return;
                             final ctrl = _controller;
                             final calleeId = int.tryParse(chat.id ?? '');
+                            final meId = await FlutterSecureStorage()
+                                .read(key: 'user_id')
+                                .then((v) => int.tryParse(v ?? ''));
+
                             if (calleeId == null) return;
-                            final uuid =
-                                'ac_${DateTime.now().millisecondsSinceEpoch}';
+                            if (meId == null) {
+                              return;
+                            }
+
+                            final a = meId <= calleeId ? meId : calleeId;
+                            final b = meId <= calleeId ? calleeId : meId;
+                            final roomId =
+                                'vc_${a}_${b}_${DateTime.now().millisecondsSinceEpoch}';
+
+                            await _signaling.createRoom(roomId);
+
                             await ctrl.startIncomingCall(
                               calleeUserId: calleeId,
-                              uuid: uuid,
+                              uuid: roomId,
                               callerName: chat.name,
                               callerHandle: chat.id ?? '',
                               callerAvatar: chat.avatarUrl,
                               callType: 0,
                             );
+
                             Navigator.pushNamed(
                               context,
                               AppRoutes.call,

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../services/signaling.dart';
-import '../../models/messages/chat_summary_model.dart';
 
 class CallingView extends StatefulWidget {
   const CallingView({super.key});
@@ -18,7 +16,6 @@ class _CallingViewState extends State<CallingView> {
   final _signaling = Signaling();
   final _localRenderer = RTCVideoRenderer();
   final _remoteRenderer = RTCVideoRenderer();
-  bool _initialized = false;
   String? _roomId;
   bool _muted = false;
   String _statusText = 'Connecting...';
@@ -36,22 +33,9 @@ class _CallingViewState extends State<CallingView> {
     await _remoteRenderer.initialize();
 
     final rawArgs = ModalRoute.of(context)?.settings.arguments;
-    final args = rawArgs is ChatSummaryModel ? rawArgs : null;
-    final storage = const FlutterSecureStorage();
-    final meStr = await storage.read(key: 'user_id');
-    final meId = int.tryParse(meStr ?? '');
+
     if (rawArgs is Map && rawArgs['roomId'] is String) {
       _roomId = rawArgs['roomId'] as String;
-    } else {
-      final otherId = int.tryParse(args?.id ?? '');
-      if (meId == null || otherId == null) {
-        setState(() => _initialized = true);
-        return;
-      }
-      final a = meId <= otherId ? meId : otherId;
-      final b = meId <= otherId ? otherId : meId;
-      final roomId = 'vc_${a}_$b';
-      _roomId = roomId;
     }
 
     _signaling.onPeerConnectionState = (state) {
@@ -90,9 +74,8 @@ class _CallingViewState extends State<CallingView> {
     final snap = await roomRef.get();
     if (snap.exists && (snap.data()?['offer'] != null)) {
       await _signaling.joinRoom(_roomId!);
-    } else {
-      await _signaling.createRoom(_roomId!);
     }
+
     _roomSub = roomRef.snapshots().listen((snapshot) async {
       if (!snapshot.exists) {
         setState(() => _statusText = 'Call ended');
@@ -100,8 +83,6 @@ class _CallingViewState extends State<CallingView> {
         if (mounted) Navigator.pop(context);
       }
     });
-
-    if (mounted) setState(() => _initialized = true);
   }
 
   @override
@@ -115,7 +96,7 @@ class _CallingViewState extends State<CallingView> {
 
   Future<void> _endCall(BuildContext context) async {
     await _signaling.hangUp(_localRenderer);
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   void _toggleMute() {
