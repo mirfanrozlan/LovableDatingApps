@@ -88,12 +88,20 @@ class AuthService {
 
   Future<bool> register(RegisterFormModel form) async {
     try {
+      // Calculate age from birthDate
+      final now = DateTime.now();
+      int age = now.year - form.birthDate.year;
+      if (now.month < form.birthDate.month || 
+          (now.month == form.birthDate.month && now.day < form.birthDate.day)) {
+        age--;
+      }
+      
       var response = await http.post(
         Uri.https('demo.mazri-minecraft.xyz', '/api/register'),
         body: {
           'users[user_name]': form.username,
           'users[user_gender]': form.gender,
-          'users[user_age]': form.age.toString(),
+          'users[user_age]': age.toString(),
           'users[user_desc]': form.bio,
           'users[user_education]': form.education,
           'users[user_subs]': 'no', // Default value

@@ -2,7 +2,7 @@ class RegisterFormModel {
   final String username;
   final String email;
   final String password;
-  final int age;
+  final DateTime birthDate;
   final String gender;
   final String interests;
   final String bio;
@@ -25,7 +25,7 @@ class RegisterFormModel {
     required this.username,
     required this.email,
     required this.password,
-    required this.age,
+    required this.birthDate,
     required this.gender,
     this.interests = '',
     this.bio = '',

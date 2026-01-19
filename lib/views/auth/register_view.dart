@@ -39,7 +39,7 @@ class _RegisterViewState extends State<RegisterView> {
   int _stepIndex = 0;
   String _gender = 'Male';
   String _attractedGender = 'Male';
-  int _age = 18;
+  DateTime? _birthDate;
   int _minAge = 18;
   int _maxAge = 50;
   int _distance = 10;
@@ -314,8 +314,9 @@ class _RegisterViewState extends State<RegisterView> {
         const SizedBox(height: 12),
         _buildGenderSelector(isDark, _gender, (v) => setState(() => _gender = v)),
         const SizedBox(height: 24),
-        _buildSectionLabel('Age: $_age', isDark),
-        _buildSlider(_age.toDouble(), 18, 100, (v) => setState(() => _age = v.round()), isDark),
+        _buildSectionLabel('Birth Date', isDark),
+        const SizedBox(height: 12),
+        _buildBirthDatePicker(isDark),
         const SizedBox(height: 16),
         _buildTextField(
           controller: _interests,
@@ -521,40 +522,148 @@ class _RegisterViewState extends State<RegisterView> {
   }
 
   Widget _buildGenderSelector(bool isDark, String value, Function(String) onChanged) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: ['Male', 'Female', 'Non-Binary'].map((gender) {
-        final isSelected = value == gender;
-        return GestureDetector(
-          onTap: () => onChanged(gender),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF10B981)
-                  : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8)),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? const Color(0xFF10B981)
-                    : (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE)),
-                width: 1,
-              ),
+    final genders = [
+      {'label': 'Male', 'icon': Icons.male},
+      {'label': 'Female', 'icon': Icons.female},
+    ];
+    
+    return Row(
+      children: genders.map((gender) {
+        final isSelected = value == gender['label'];
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: gender['label'] == 'Male' ? 8 : 0,
+              left: gender['label'] == 'Female' ? 8 : 0,
             ),
-            child: Text(
-              gender,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? Colors.white70 : const Color(0xFF666666)),
+            child: GestureDetector(
+              onTap: () => onChanged(gender['label'] as String),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF10B981)
+                      : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF10B981)
+                        : (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE)),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      gender['icon'] as IconData,
+                      size: 24,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.white70 : const Color(0xFF666666)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      gender['label'] as String,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : const Color(0xFF666666)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildBirthDatePicker(bool isDark) {
+    final now = DateTime.now();
+    final minDate = DateTime(now.year - 100, now.month, now.day);
+    final maxDate = DateTime(now.year - 18, now.month, now.day);
+    
+    String displayText = 'Select your birth date';
+    if (_birthDate != null) {
+      final age = now.year - _birthDate!.year - 
+          (now.month < _birthDate!.month || 
+           (now.month == _birthDate!.month && now.day < _birthDate!.day) ? 1 : 0);
+      displayText = '${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year} (Age: $age)';
+    }
+    
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _birthDate ?? maxDate,
+          firstDate: minDate,
+          lastDate: maxDate,
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.light(
+                  primary: const Color(0xFF10B981),
+                  onPrimary: Colors.white,
+                  surface: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                  onSurface: isDark ? Colors.white : const Color(0xFF1a1a1a),
+                ),
+                dialogBackgroundColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          setState(() => _birthDate = picked);
+        }
+      },
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Icon(
+                Icons.cake_outlined,
+                color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                size: 22,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                displayText,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: _birthDate != null
+                      ? (isDark ? Colors.white : const Color(0xFF1a1a1a))
+                      : (isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC)),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Icon(
+                Icons.calendar_today_outlined,
+                color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -819,12 +928,18 @@ class _RegisterViewState extends State<RegisterView> {
 
   void _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
+      if (_birthDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select your birth date')),
+        );
+        return;
+      }
       setState(() => _isLoading = true);
       final form = RegisterFormModel(
         username: _username.text,
         email: _email.text,
         password: _password.text,
-        age: _age,
+        birthDate: _birthDate!,
         gender: _gender,
         interests: _interests.text,
         bio: _bio.text,

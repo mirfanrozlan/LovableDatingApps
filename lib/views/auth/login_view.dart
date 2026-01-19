@@ -181,22 +181,23 @@ class _LoginViewState extends State<LoginView> {
               
               const SizedBox(height: 20),
               
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildRememberMe(isDark),
-                  TextButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.forgot),
-                    child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF10B981),
-                      ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.forgot),
+                  child: const Text(
+                    'FORGOT PASSWORD?',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Color(0xFF10B981),
+                      decoration: TextDecoration.underline,
+                      decorationColor: Color(0xFF10B981),
+                      decorationThickness: 2,
                     ),
                   ),
-                ],
+                ),
               ),
               
               const SizedBox(height: 32),
@@ -299,12 +300,15 @@ class _LoginViewState extends State<LoginView> {
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
                   : null,
             ),
-            const SizedBox(width: 10),
-            Text(
-              'Remember me',
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white70 : const Color(0xFF666666),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Remember me',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white70 : const Color(0xFF666666),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
