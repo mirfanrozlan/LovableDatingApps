@@ -7,6 +7,7 @@ import '../../controllers/auth/auth_controller.dart';
 import '../../models/auth/register_form_model.dart';
 import '../../themes/theme.dart';
 import '../../routes.dart';
+import '../../services/malaysia_postcode_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -27,15 +28,12 @@ class _RegisterViewState extends State<RegisterView> {
   final _bio = TextEditingController();
   final _education = TextEditingController();
   final _address = TextEditingController();
-  final _postcode = TextEditingController();
-  final _state = TextEditingController();
-  final _city = TextEditingController();
-  final _country = TextEditingController();
   final _phone = TextEditingController();
   final _otp = TextEditingController();
   final _controller = AuthController();
   bool _showPassword = false;
   bool _isLoading = false;
+  bool _isLoadingPostcodes = true;
   int _stepIndex = 0;
   String _gender = 'Male';
   String _attractedGender = 'Male';
@@ -45,6 +43,56 @@ class _RegisterViewState extends State<RegisterView> {
   int _distance = 10;
   String _photoName = '';
   XFile? _photo;
+
+  // Malaysia postcode data
+  String? _selectedState;
+  String? _selectedCity;
+  String? _selectedPostcode;
+  List<String> _stateList = [];
+  List<String> _cityList = [];
+  List<String> _postcodeList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPostcodeData();
+  }
+
+  Future<void> _loadPostcodeData() async {
+    await MalaysiaPostcodeService.instance.loadData();
+    setState(() {
+      _stateList = MalaysiaPostcodeService.instance.getStateNames();
+      _isLoadingPostcodes = false;
+    });
+  }
+
+  void _onStateChanged(String? state) {
+    setState(() {
+      _selectedState = state;
+      _selectedCity = null;
+      _selectedPostcode = null;
+      _cityList = state != null 
+          ? MalaysiaPostcodeService.instance.getCitiesForState(state)
+          : [];
+      _postcodeList = [];
+    });
+  }
+
+  void _onCityChanged(String? city) {
+    setState(() {
+      _selectedCity = city;
+      _selectedPostcode = null;
+      _postcodeList = (_selectedState != null && city != null)
+          ? MalaysiaPostcodeService.instance.getPostcodesForCity(_selectedState!, city)
+          : [];
+    });
+  }
+
+  void _onPostcodeChanged(String? postcode) {
+    setState(() {
+      _selectedPostcode = postcode;
+    });
+  }
 
   @override
   void dispose() {
@@ -56,14 +104,11 @@ class _RegisterViewState extends State<RegisterView> {
     _bio.dispose();
     _education.dispose();
     _address.dispose();
-    _postcode.dispose();
-    _state.dispose();
-    _city.dispose();
-    _country.dispose();
     _phone.dispose();
     _otp.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -361,48 +406,37 @@ class _RegisterViewState extends State<RegisterView> {
           isDark: isDark,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                controller: _postcode,
-                hint: 'Postcode',
-                icon: Icons.location_on_outlined,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextField(
-                controller: _city,
-                hint: 'City',
-                icon: Icons.location_city_outlined,
-                isDark: isDark,
-              ),
-            ),
-          ],
+        // State dropdown
+        _buildDropdown(
+          value: _selectedState,
+          hint: 'Select State',
+          icon: Icons.map_outlined,
+          isDark: isDark,
+          items: _stateList,
+          onChanged: _onStateChanged,
+          isLoading: _isLoadingPostcodes,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                controller: _state,
-                hint: 'State',
-                icon: Icons.map_outlined,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextField(
-                controller: _country,
-                hint: 'Country',
-                icon: Icons.public,
-                isDark: isDark,
-              ),
-            ),
-          ],
+        // City dropdown
+        _buildDropdown(
+          value: _selectedCity,
+          hint: 'Select City',
+          icon: Icons.location_city_outlined,
+          isDark: isDark,
+          items: _cityList,
+          onChanged: _onCityChanged,
+          enabled: _selectedState != null,
+        ),
+        const SizedBox(height: 16),
+        // Postcode dropdown
+        _buildDropdown(
+          value: _selectedPostcode,
+          hint: 'Select Postcode',
+          icon: Icons.pin_outlined,
+          isDark: isDark,
+          items: _postcodeList,
+          onChanged: _onPostcodeChanged,
+          enabled: _selectedCity != null,
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -517,6 +551,81 @@ class _RegisterViewState extends State<RegisterView> {
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String? value,
+    required String hint,
+    required IconData icon,
+    required bool isDark,
+    required List<String> items,
+    required Function(String?) onChanged,
+    bool isLoading = false,
+    bool enabled = true,
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(
+              icon,
+              color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+              size: 22,
+            ),
+          ),
+          Expanded(
+            child: isLoading
+                ? Text(
+                    'Loading...',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
+                    ),
+                  )
+                : DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: value,
+                      hint: Text(
+                        hint,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
+                        ),
+                      ),
+                      isExpanded: true,
+                      icon: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                      ),
+                      dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+                      ),
+                      onChanged: enabled ? onChanged : null,
+                      items: items.map((item) {
+                        return DropdownMenuItem<String>(
+                          value: item,
+                          child: Text(item),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
     );
   }
@@ -945,10 +1054,10 @@ class _RegisterViewState extends State<RegisterView> {
         bio: _bio.text,
         education: _education.text,
         address: _address.text,
-        postcode: _postcode.text,
-        state: _state.text,
-        city: _city.text,
-        country: _country.text,
+        postcode: _selectedPostcode ?? '',
+        state: _selectedState ?? '',
+        city: _selectedCity ?? '',
+        country: 'Malaysia',
         phone: _phone.text,
         otp: _otp.text,
         minAge: _minAge,
