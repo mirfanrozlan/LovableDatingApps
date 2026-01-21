@@ -139,9 +139,9 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
       color: Colors.transparent,
       child: InkWell(
         onTap: widget.isDetailView ? null : _navigateToDetail,
-        splashColor: widget.isDetailView ? Colors.transparent : null,
-        highlightColor: widget.isDetailView ? Colors.transparent : null,
-        hoverColor: widget.isDetailView ? Colors.transparent : null,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
         borderRadius: widget.isDetailView 
             ? const BorderRadius.vertical(top: Radius.circular(20))
             : BorderRadius.circular(20),
@@ -230,6 +230,9 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: _deletePost,
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
                             padding: const EdgeInsets.all(8),
