@@ -18,6 +18,7 @@ class _PostMomentViewState extends State<PostMomentView> {
   File? _selectedImage;
   bool _isPosting = false;
   int _charCount = 0;
+  final int _maxCharCount = 500;
 
   @override
   void dispose() {
@@ -37,12 +38,21 @@ class _PostMomentViewState extends State<PostMomentView> {
     }
   }
 
-  // Camera capture removed per design
-
   Future<void> _postMoment() async {
     if (_textController.text.isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add text or an image')),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Please add text or an image'),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
       return;
     }
@@ -59,17 +69,33 @@ class _PostMomentViewState extends State<PostMomentView> {
 
       if (mounted) {
         if (success) {
-          Navigator.pop(context, true); // Return true to indicate success
+          Navigator.pop(context, true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to post moment')),
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Failed to post moment'),
+                ],
+              ),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       }
     } finally {
@@ -83,143 +109,445 @@ class _PostMomentViewState extends State<PostMomentView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final canPost = _textController.text.isNotEmpty || _selectedImage != null;
+    
     return AppScaffold(
-      useGradient: true,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    const Color(0xFF0F1512),
+                    const Color(0xFF0A0F0D),
+                  ]
+                : [
+                    const Color(0xFFF0FDF8),
+                    const Color(0xFFECFDF5),
+                  ],
           ),
-          title: const Text('Create Post', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-          actions: const [],
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark 
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            title: Text(
+              'Create Moment',
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            centerTitle: true,
+            actions: [
+              Container(
+                margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: ElevatedButton(
+                    onPressed: (_isPosting || !canPost) ? null : _postMoment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canPost 
+                          ? const Color(0xFF10B981)
+                          : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark 
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.grey.shade200,
+                      disabledForegroundColor: isDark 
+                          ? Colors.white38
+                          : Colors.grey.shade400,
+                      elevation: canPost ? 2 : 0,
+                      shadowColor: const Color(0xFF10B981).withOpacity(0.3),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _textController,
-                        maxLines: null,
-                        onChanged: (v) => setState(() => _charCount = v.length),
-                        decoration: const InputDecoration(
-                          hintText: "What's on your mind?",
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide.none,
-                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: _isPosting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Post',
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          fillColor: Color(0xFFF3F4F6),
-                          filled: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Text('$_charCount', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                          const Spacer(),
-                          Text(
-                            'Add media',
-                            style: TextStyle(color: Colors.black.withOpacity(0.6), fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (_selectedImage == null)
-                        GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            height: 180,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black12),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.add, size: 32, color: AppTheme.primary),
-                                SizedBox(height: 8),
-                                Text('Add image', style: TextStyle(color: Colors.grey)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      if (_selectedImage != null) ...[
-                        const SizedBox(height: 8),
-                        Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                _selectedImage!,
-                                height: 220,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedImage = null;
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.5),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 18),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isPosting ? null : _postMoment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ],
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Main content card
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark 
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark 
+                              ? Colors.black.withOpacity(0.2)
+                              : Colors.black.withOpacity(0.06),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Text input
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: TextField(
+                            controller: _textController,
+                            maxLines: null,
+                            minLines: 4,
+                            maxLength: _maxCharCount,
+                            onChanged: (v) => setState(() => _charCount = v.length),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isDark ? Colors.white : Colors.black87,
+                              height: 1.5,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: "What's on your mind? Share your moment...",
+                              hintStyle: TextStyle(
+                                color: isDark 
+                                    ? Colors.white38
+                                    : Colors.grey.shade400,
+                                fontSize: 16,
+                              ),
+                              border: InputBorder.none,
+                              counterText: '',
+                            ),
+                          ),
+                        ),
+                        
+                        // Progress indicator for character count
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: _charCount / _maxCharCount,
+                                    backgroundColor: isDark 
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.grey.shade200,
+                                    valueColor: AlwaysStoppedAnimation(
+                                      _charCount > _maxCharCount * 0.9
+                                          ? Colors.orange.shade400
+                                          : const Color(0xFF10B981),
+                                    ),
+                                    minHeight: 4,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                '$_charCount / $_maxCharCount',
+                                style: TextStyle(
+                                  color: _charCount > _maxCharCount * 0.9
+                                      ? Colors.orange.shade400
+                                      : (isDark ? Colors.white60 : Colors.grey.shade500),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Image section
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          child: _selectedImage == null
+                              ? GestureDetector(
+                                  onTap: _pickImage,
+                                  child: Container(
+                                    height: 180,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: isDark 
+                                            ? [
+                                                Colors.white.withOpacity(0.03),
+                                                Colors.white.withOpacity(0.06),
+                                              ]
+                                            : [
+                                                const Color(0xFFF0FDF8),
+                                                const Color(0xFFECFDF5),
+                                              ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isDark 
+                                            ? Colors.white.withOpacity(0.1)
+                                            : const Color(0xFF10B981).withOpacity(0.2),
+                                        width: 2,
+                                        style: BorderStyle.solid,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                const Color(0xFF10B981).withOpacity(0.2),
+                                                const Color(0xFF34D399).withOpacity(0.15),
+                                              ],
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.add_photo_alternate_rounded,
+                                            size: 32,
+                                            color: const Color(0xFF10B981).withOpacity(0.8),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Add a photo',
+                                          style: TextStyle(
+                                            color: isDark 
+                                                ? Colors.white60
+                                                : const Color(0xFF10B981),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Tap to select from gallery',
+                                          style: TextStyle(
+                                            color: isDark 
+                                                ? Colors.white38
+                                                : Colors.grey.shade500,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Image.file(
+                                        _selectedImage!,
+                                        height: 280,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 12,
+                                      right: 12,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedImage = null;
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.2),
+                                                blurRadius: 8,
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(
+                                            Icons.close_rounded,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 12,
+                                      left: 12,
+                                      child: GestureDetector(
+                                        onTap: _pickImage,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.swap_horiz_rounded,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 6),
+                                              Text(
+                                                'Change',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: _isPosting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Post Moment', style: TextStyle(fontWeight: FontWeight.bold)),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Quick actions
+                  Row(
+                    children: [
+                      _QuickAction(
+                        icon: Icons.image_rounded,
+                        label: 'Gallery',
+                        color: const Color(0xFF10B981),
+                        onTap: _pickImage,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickAction(
+                        icon: Icons.emoji_emotions_rounded,
+                        label: 'Mood',
+                        color: Colors.orange,
+                        onTap: () {
+                          // Mood picker placeholder
+                        },
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickAction(
+                        icon: Icons.location_on_rounded,
+                        label: 'Location',
+                        color: Colors.blue,
+                        onTap: () {
+                          // Location picker placeholder
+                        },
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: isDark 
+            ? Colors.white.withOpacity(0.05)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white70 : Colors.grey.shade700,
+                  ),
                 ),
               ],
             ),

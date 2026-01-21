@@ -38,15 +38,27 @@ class MomentCard extends StatefulWidget {
   State<MomentCard> createState() => _MomentCardState();
 }
 
-class _MomentCardState extends State<MomentCard> {
+class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateMixin {
   bool _likedPostByMe = false;
+  late AnimationController _likeAnimController;
+  late Animation<double> _likeScaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Initialize liked state if available in model (model doesn't have likedByMe yet, assuming handled by parent or local toggle)
-    // The current model doesn't seem to have 'likedByMe'. The old code managed it locally via `_likedPostByMe`.
-    // We'll stick to local toggle for immediate feedback.
+    _likeAnimController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _likeScaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _likeAnimController, curve: Curves.easeOutBack),
+    );
+  }
+
+  @override
+  void dispose() {
+    _likeAnimController.dispose();
+    super.dispose();
   }
 
   Future<void> _deletePost() async {
@@ -54,16 +66,22 @@ class _MomentCardState extends State<MomentCard> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Delete Post'),
-            content: const Text('Are you sure you want to delete this post?'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Delete Post', style: TextStyle(fontWeight: FontWeight.bold)),
+            content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600)),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.red.shade400,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
                 child: const Text('Delete'),
               ),
             ],
@@ -72,9 +90,14 @@ class _MomentCardState extends State<MomentCard> {
     if (confirmed == true) {
       final success = await widget.onDeletePost(widget.post.postId);
       if (success && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Post deleted')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Post deleted successfully'),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
     }
   }
@@ -93,175 +116,360 @@ class _MomentCardState extends State<MomentCard> {
     );
   }
 
+  void _handleLike() {
+    setState(() => _likedPostByMe = !_likedPostByMe);
+    if (_likedPostByMe) {
+      _likeAnimController.forward().then((_) => _likeAnimController.reverse());
+    }
+    widget.onLike();
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
-    return InkWell(
-      onTap: _navigateToDetail,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border:
-              widget.flat
-                  ? null
-                  : Border(bottom: BorderSide(color: Colors.grey.shade100)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left Column: Avatar
-            Column(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      margin: widget.flat ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : const Color(0xFF10B981).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _navigateToDetail,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage:
-                      post.userMedia.isNotEmpty
-                          ? NetworkImage(post.userMedia)
-                          : null,
-                  child: post.userMedia.isEmpty ? Text(post.initials) : null,
-                ),
-                // Could add a vertical line here if it was a thread chain
-              ],
-            ),
-            const SizedBox(width: 12),
-            // Right Column: Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header: Name, Time, More
-                  Row(
-                    children: [
-                      Text(
-                        post.userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                // Header Row
+                Row(
+                  children: [
+                    // Avatar with gradient border
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        post.timeAgo,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 13,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        ),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
+                          backgroundImage:
+                              post.userMedia.isNotEmpty
+                                  ? NetworkImage(post.userMedia)
+                                  : null,
+                          child: post.userMedia.isEmpty 
+                              ? Text(
+                                  post.initials,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ) 
+                              : null,
                         ),
                       ),
-                      const Spacer(),
-                      if (widget.currentUserId != null &&
-                          widget.currentUserId == post.userId)
-                        GestureDetector(
+                    ),
+                    const SizedBox(width: 12),
+                    // Name and time
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.userName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                post.timeAgo,
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // More options
+                    if (widget.currentUserId != null && widget.currentUserId == post.userId)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
                           onTap: _deletePost,
-                          child: const Icon(
-                            Icons.more_horiz,
-                            color: Colors.grey,
-                            size: 20,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark 
+                                  ? Colors.white.withOpacity(0.05)
+                                  : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.more_horiz_rounded,
+                              color: Colors.grey.shade500,
+                              size: 20,
+                            ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Content Text
-                  if (post.postCaption.isNotEmpty)
-                    Text(
-                      post.postCaption,
-                      style: const TextStyle(fontSize: 15, height: 1.3),
-                    ),
-                  // Content Image
-                  if (post.postMedia.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ConstrainedBox(
-                        constraints:
-                            widget.isDetailView
-                                ? const BoxConstraints()
-                                : const BoxConstraints(maxHeight: 300),
-                        child: Image.network(
-                          post.postMedia,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder:
-                              (ctx, err, stack) => Container(
-                                height: 150,
-                                color: Colors.grey.shade200,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
-                        ),
                       ),
-                    ),
                   ],
-                  const SizedBox(height: 12),
-                  // Action Row
-                  Row(
-                    children: [
-                      // Like
-                      GestureDetector(
-                        onTap: () {
-                          setState(() => _likedPostByMe = !_likedPostByMe);
-                          widget.onLike();
-                        },
-                        child: Row(
-                          children: [
-                            Icon(
-                              _likedPostByMe
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              size: 20,
-                              color:
-                                  _likedPostByMe
-                                      ? const Color(0xFF10B981)
-                                      : Colors.black54,
-                            ),
-                            if (post.postLikes > 0 || _likedPostByMe) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                '${post.postLikes + (_likedPostByMe ? 1 : 0)}', // Basic optimistic update visualization
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      // Comment
-                      GestureDetector(
-                        onTap: _navigateToDetail,
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.chat_bubble_outline,
-                              size: 20,
-                              color: Colors.black54,
-                            ),
-                            if (post.commentsCount > 0) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                '${post.commentsCount}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
+                ),
+                
+                // Content
+                if (post.postCaption.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    post.postCaption,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
+                    ),
                   ),
                 ],
-              ),
+                
+                // Image
+                if (post.postMedia.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: ConstrainedBox(
+                      constraints: widget.isDetailView
+                          ? const BoxConstraints()
+                          : const BoxConstraints(maxHeight: 350),
+                      child: Stack(
+                        children: [
+                          Image.network(
+                            post.postMedia,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: isDark 
+                                      ? Colors.white.withOpacity(0.05)
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                    strokeWidth: 2,
+                                    color: const Color(0xFF10B981),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (ctx, err, stack) => Container(
+                              height: 150,
+                              decoration: BoxDecoration(
+                                color: isDark 
+                                    ? Colors.white.withOpacity(0.05)
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image_rounded,
+                                      color: Colors.grey.shade400,
+                                      size: 32,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Image unavailable',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                
+                // Action Row
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark 
+                        ? Colors.white.withOpacity(0.03)
+                        : const Color(0xFFF8FFFE),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      // Like button
+                      Expanded(
+                        child: _ActionButton(
+                          icon: AnimatedBuilder(
+                            animation: _likeScaleAnimation,
+                            builder: (context, child) => Transform.scale(
+                              scale: _likeScaleAnimation.value,
+                              child: Icon(
+                                _likedPostByMe
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_outline_rounded,
+                                size: 22,
+                                color: _likedPostByMe
+                                    ? const Color(0xFF10B981)
+                                    : (isDark ? Colors.white60 : Colors.grey.shade600),
+                              ),
+                            ),
+                          ),
+                          label: '${post.postLikes + (_likedPostByMe ? 1 : 0)}',
+                          isActive: _likedPostByMe,
+                          onTap: _handleLike,
+                          isDark: isDark,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 24,
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                      ),
+                      // Comment button
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 20,
+                            color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          ),
+                          label: '${post.commentsCount}',
+                          isActive: false,
+                          onTap: _navigateToDetail,
+                          isDark: isDark,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 24,
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
+                      ),
+                      // Share button
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icon(
+                            Icons.share_outlined,
+                            size: 20,
+                            color: isDark ? Colors.white60 : Colors.grey.shade600,
+                          ),
+                          label: 'Share',
+                          isActive: false,
+                          onTap: () {
+                            // Share functionality placeholder
+                          },
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final Widget icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: isActive
+                      ? const Color(0xFF10B981)
+                      : (isDark ? Colors.white60 : Colors.grey.shade600),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
