@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../themes/theme.dart';
@@ -26,9 +28,13 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
   
   bool _loading = true;
   bool _saving = false;
+  bool _uploadingImage = false;
   UserModel? _user;
+  File? _selectedImage;
+  String? _currentImageUrl;
   final _momentsService = MomentsService();
   final _authService = AuthService();
+  final _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -52,6 +58,7 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
           _occupationController.text = user.education;
           _bioController.text = user.description;
           _interestsController.text = user.interests;
+          _currentImageUrl = user.media;
           _loading = false;
         });
         _animController.forward();
@@ -297,6 +304,14 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
   }
 
   Widget _buildAvatarSection(bool isDark) {
+    // Determine what image to show: selected local file, current URL, or placeholder
+    ImageProvider? imageProvider;
+    if (_selectedImage != null) {
+      imageProvider = FileImage(_selectedImage!);
+    } else if (_currentImageUrl != null && _currentImageUrl!.isNotEmpty) {
+      imageProvider = NetworkImage(_currentImageUrl!);
+    }
+
     return Center(
       child: Stack(
         children: [
@@ -326,13 +341,18 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
               child: CircleAvatar(
                 radius: 54,
                 backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
-                backgroundImage: _user?.media.isNotEmpty == true ? NetworkImage(_user!.media) : null,
-                child: _user?.media.isEmpty == true 
-                  ? Text(
-                      _user!.name.isNotEmpty ? _user!.name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
-                    ) 
-                  : null,
+                backgroundImage: imageProvider,
+                child: _uploadingImage
+                    ? const CircularProgressIndicator(
+                        color: Color(0xFF10B981),
+                        strokeWidth: 3,
+                      )
+                    : (imageProvider == null
+                        ? Text(
+                            _user?.name.isNotEmpty == true ? _user!.name[0].toUpperCase() : '?',
+                            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                          )
+                        : null),
               ),
             ),
           ),
@@ -340,13 +360,11 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
             right: 4,
             bottom: 4,
             child: InkWell(
-              onTap: () {
-                // Future: implementation of image picking
-              },
+              onTap: _uploadingImage ? null : _showImagePickerOptions,
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981),
+                  color: _uploadingImage ? Colors.grey : const Color(0xFF10B981),
                   shape: BoxShape.circle,
                   border: Border.all(color: isDark ? const Color(0xFF1A1A1A) : Colors.white, width: 3),
                   boxShadow: [
@@ -361,6 +379,180 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
       ),
     );
   }
+
+  void _showImagePickerOptions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Change Profile Picture',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildImagePickerOption(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Camera',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.camera);
+                    },
+                    isDark: isDark,
+                  ),
+                  _buildImagePickerOption(
+                    icon: Icons.photo_library_rounded,
+                    label: 'Gallery',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImage(ImageSource.gallery);
+                    },
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePickerOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.white12 : const Color(0xFF10B981).withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFF10B981), size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+          _uploadingImage = true;
+        });
+
+        // Upload the image
+        final userId = await _momentsService.getCurrentUserId();
+        if (userId != null) {
+          final result = await _authService.uploadProfilePicture(userId, pickedFile.path);
+          
+          if (result != null && mounted) {
+            setState(() {
+              _uploadingImage = false;
+              if (result != 'success') {
+                _currentImageUrl = result;
+              }
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile picture updated!'),
+                backgroundColor: Color(0xFF10B981),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else if (mounted) {
+            setState(() {
+              _uploadingImage = false;
+              _selectedImage = null; // Revert on failure
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to upload image. Please try again.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _uploadingImage = false;
+          _selectedImage = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
 
   Widget _buildInputField({
     required TextEditingController controller,

@@ -465,6 +465,90 @@ class AuthService {
       return false;
     }
   }
+  /// Upload a new profile picture using the updateProfile API.
+  /// Returns the new image URL on success, null on failure.
+  Future<String?> uploadProfilePicture(int userId, String imagePath) async {
+    try {
+      final storage = const FlutterSecureStorage();
+      final token = await storage.read(key: 'auth_token');
+      
+      // First fetch current user data and preferences to preserve them
+      final currentUser = await _fetchUserDetails(userId, token);
+      final currentPrefs = await _fetchPreferences(userId, token);
+      
+      if (currentUser == null) {
+        print('Could not fetch current user data');
+        return null;
+      }
+      
+      final uri = Uri.https('demo.mazri-minecraft.xyz', '/api/updateProfile');
+      var request = http.MultipartRequest('POST', uri);
+      
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+      
+      // Add the image file
+      request.files.add(
+        await http.MultipartFile.fromPath('users[user_media]', imagePath),
+      );
+      
+      // Add all other required fields to preserve current values
+      request.fields['users[user_name]'] = currentUser['user_name']?.toString() ?? '';
+      request.fields['users[user_gender]'] = currentUser['user_gender']?.toString() ?? '';
+      request.fields['users[user_age]'] = currentUser['user_age']?.toString() ?? '0';
+      request.fields['users[user_desc]'] = currentUser['user_desc']?.toString() ?? '';
+      request.fields['users[user_education]'] = currentUser['user_education']?.toString() ?? '';
+      request.fields['users[user_subs]'] = currentUser['user_subs']?.toString() ?? 'no';
+      
+      // Location fields
+      request.fields['locations[user_address]'] = currentUser['user_address']?.toString() ?? '';
+      request.fields['locations[user_postcode]'] = currentUser['user_postcode']?.toString() ?? '';
+      request.fields['locations[user_state]'] = currentUser['user_state']?.toString() ?? '';
+      request.fields['locations[user_city]'] = currentUser['user_city']?.toString() ?? '';
+      request.fields['locations[user_country]'] = currentUser['user_country']?.toString() ?? '';
+      
+      // Interest fields
+      request.fields['interest[user_interest]'] = currentUser['user_interest']?.toString() ?? '';
+      
+      // Preferences
+      request.fields['preferences[pref_gender]'] = currentPrefs?['pref_gender']?.toString() ?? 'male';
+      request.fields['preferences[pref_age_min]'] = currentPrefs?['pref_age_min']?.toString() ?? '18';
+      request.fields['preferences[pref_age_max]'] = currentPrefs?['pref_age_max']?.toString() ?? '80';
+      request.fields['preferences[pref_location]'] = currentPrefs?['pref_location']?.toString() ?? '50';
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('Upload profile pic response: ${response.statusCode} ${response.body}');
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        // Return the new image URL from response
+        if (data['user_media'] != null) {
+          String url = data['user_media'].toString();
+          if (!url.startsWith('http')) {
+            url = 'https://demo.mazri-minecraft.xyz/$url';
+          }
+          return url;
+        }
+        if (data['url'] != null) {
+          return data['url'].toString();
+        }
+        if (data['image_url'] != null) {
+          return data['image_url'].toString();
+        }
+        // If API doesn't return URL, return success indicator
+        return 'success';
+      }
+      print('Upload failed with status: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('Upload profile picture error: $e');
+      return null;
+    }
+  }
 }
 
 enum LoginStatus {
