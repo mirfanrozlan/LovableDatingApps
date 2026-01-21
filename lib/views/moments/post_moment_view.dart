@@ -295,82 +295,11 @@ class _PostMomentViewState extends State<PostMomentView> {
                         
                         const SizedBox(height: 16),
                         
-                        // Image section
+                        // Image section - redesigned
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                           child: _selectedImage == null
-                              ? GestureDetector(
-                                  onTap: _pickImage,
-                                  child: Container(
-                                    height: 180,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: isDark 
-                                            ? [
-                                                Colors.white.withOpacity(0.03),
-                                                Colors.white.withOpacity(0.06),
-                                              ]
-                                            : [
-                                                const Color(0xFFF0FDF8),
-                                                const Color(0xFFECFDF5),
-                                              ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: isDark 
-                                            ? Colors.white.withOpacity(0.1)
-                                            : const Color(0xFF10B981).withOpacity(0.2),
-                                        width: 2,
-                                        style: BorderStyle.solid,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                const Color(0xFF10B981).withOpacity(0.2),
-                                                const Color(0xFF34D399).withOpacity(0.15),
-                                              ],
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.add_photo_alternate_rounded,
-                                            size: 32,
-                                            color: const Color(0xFF10B981).withOpacity(0.8),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Add a photo',
-                                          style: TextStyle(
-                                            color: isDark 
-                                                ? Colors.white60
-                                                : const Color(0xFF10B981),
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Tap to select from gallery',
-                                          style: TextStyle(
-                                            color: isDark 
-                                                ? Colors.white38
-                                                : Colors.grey.shade500,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
+                              ? _buildAddPhotoCard(isDark)
                               : Stack(
                                   children: [
                                     ClipRRect(
@@ -415,7 +344,7 @@ class _PostMomentViewState extends State<PostMomentView> {
                                       bottom: 12,
                                       left: 12,
                                       child: GestureDetector(
-                                        onTap: _pickImage,
+                                        onTap: () => _showImagePickerOptions(context, isDark),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 14,
@@ -453,41 +382,6 @@ class _PostMomentViewState extends State<PostMomentView> {
                       ],
                     ),
                   ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Quick actions
-                  Row(
-                    children: [
-                      _QuickAction(
-                        icon: Icons.image_rounded,
-                        label: 'Gallery',
-                        color: const Color(0xFF10B981),
-                        onTap: _pickImage,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 12),
-                      _QuickAction(
-                        icon: Icons.emoji_emotions_rounded,
-                        label: 'Mood',
-                        color: Colors.orange,
-                        onTap: () {
-                          // Mood picker placeholder
-                        },
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 12),
-                      _QuickAction(
-                        icon: Icons.location_on_rounded,
-                        label: 'Location',
-                        color: Colors.blue,
-                        onTap: () {
-                          // Location picker placeholder
-                        },
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -496,64 +390,274 @@ class _PostMomentViewState extends State<PostMomentView> {
       ),
     );
   }
-}
 
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Material(
-        color: isDark 
-            ? Colors.white.withOpacity(0.05)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 22,
-                  ),
+  Widget _buildAddPhotoCard(bool isDark) {
+    return GestureDetector(
+      onTap: () => _showImagePickerOptions(context, isDark),
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: isDark 
+              ? Colors.white.withOpacity(0.03)
+              : const Color(0xFFF8FFFC),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.1)
+                : const Color(0xFF10B981).withOpacity(0.25),
+            width: 2,
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Dashed border effect overlay
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _DashedBorderPainter(
+                  color: isDark 
+                      ? Colors.white.withOpacity(0.15)
+                      : const Color(0xFF10B981).withOpacity(0.3),
+                  strokeWidth: 2,
+                  dashWidth: 8,
+                  dashSpace: 6,
+                  radius: 24,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white70 : Colors.grey.shade700,
-                  ),
-                ),
-              ],
+              ),
             ),
+            // Content
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon container with gradient
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFF10B981).withOpacity(0.15),
+                          const Color(0xFF34D399).withOpacity(0.08),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.add_a_photo_rounded,
+                      size: 32,
+                      color: const Color(0xFF10B981).withOpacity(0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Title
+                  Text(
+                    'Add a Photo',
+                    style: TextStyle(
+                      color: isDark 
+                          ? Colors.white
+                          : const Color(0xFF047857),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Subtitle
+                  Text(
+                    'Take a photo or choose from gallery',
+                    style: TextStyle(
+                      color: isDark 
+                          ? Colors.white.withOpacity(0.5)
+                          : Colors.grey.shade500,
+                      fontSize: 13,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showImagePickerOptions(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Add Photo',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildPickerOption(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Camera',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImageFromSource(ImageSource.camera);
+                    },
+                    isDark: isDark,
+                  ),
+                  _buildPickerOption(
+                    icon: Icons.photo_library_rounded,
+                    label: 'Gallery',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImageFromSource(ImageSource.gallery);
+                    },
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),
     );
   }
+
+  Widget _buildPickerOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF8),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.white12 : const Color(0xFF10B981).withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFF10B981), size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImageFromSource(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
 }
+
+// Custom painter for dashed border effect
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double dashWidth;
+  final double dashSpace;
+  final double radius;
+
+  _DashedBorderPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.dashWidth,
+    required this.dashSpace,
+    required this.radius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        Radius.circular(radius),
+      ));
+
+    // Draw dashed path
+    final dashPath = Path();
+    final pathMetrics = path.computeMetrics();
+    
+    for (final metric in pathMetrics) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final end = distance + dashWidth;
+        dashPath.addPath(
+          metric.extractPath(distance, end.clamp(0, metric.length)),
+          Offset.zero,
+        );
+        distance = end + dashSpace;
+      }
+    }
+
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
