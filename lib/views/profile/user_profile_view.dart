@@ -213,21 +213,6 @@ class _UserProfileViewState extends State<UserProfileView> with SingleTickerProv
                               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                               child: Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Icon(
-                                      Icons.grid_view_rounded,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
                                   Text(
                                     'Moments',
                                     style: TextStyle(
@@ -565,7 +550,40 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
+                // Interests section
+                if (user.interests.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: user.interests.split(',').where((e) => e.trim().isNotEmpty).map((interest) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFF10B981).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? Colors.white.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            interest.trim(),
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : const Color(0xFF059669),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: Container(

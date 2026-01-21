@@ -236,15 +236,12 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isDark 
-                                  ? Colors.white.withOpacity(0.05)
-                                  : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(12),
+                            decoration: const BoxDecoration(
+                              color: Colors.transparent,
                             ),
                             child: Icon(
-                              Icons.more_horiz_rounded,
-                              color: Colors.grey.shade500,
+                              Icons.delete_outline_rounded,
+                              color: isDark ? Colors.red.shade300 : Colors.red.shade400,
                               size: 20,
                             ),
                           ),

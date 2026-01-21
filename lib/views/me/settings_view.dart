@@ -134,13 +134,6 @@ class _SettingsViewState extends State<SettingsView> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.account_circle),
-                      title: const Text('Account'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.account),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
                       leading: const Icon(Icons.notifications),
                       title: const Text('Notifications'),
                       trailing: const Icon(Icons.chevron_right),
