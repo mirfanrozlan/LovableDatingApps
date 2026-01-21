@@ -477,6 +477,7 @@ class _PostMomentViewState extends State<PostMomentView> {
                           ? Colors.white.withOpacity(0.5)
                           : Colors.grey.shade500,
                       fontSize: 13,
+                    ),
                   ),
                 ],
               ),
