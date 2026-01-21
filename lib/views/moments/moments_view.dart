@@ -147,30 +147,6 @@ class _MomentsViewState extends State<MomentsView> with SingleTickerProviderStat
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            const Spacer(),
-                            // Notification icon
-                            Container(
-                              decoration: BoxDecoration(
-                                color: isDark 
-                                    ? Colors.white.withOpacity(0.08)
-                                    : Colors.white.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.notifications_outlined,
-                                  color: isDark ? Colors.white70 : Colors.grey.shade700,
-                                ),
-                                onPressed: () {},
-                              ),
-                            ),
                           ],
                         ),
                       ),

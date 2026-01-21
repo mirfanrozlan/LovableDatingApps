@@ -396,27 +396,6 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                           isDark: isDark,
                         ),
                       ),
-                      Container(
-                        width: 1,
-                        height: 24,
-                        color: isDark ? Colors.white12 : Colors.grey.shade200,
-                      ),
-                      // Share button
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icon(
-                            Icons.share_outlined,
-                            size: 20,
-                            color: isDark ? Colors.white60 : Colors.grey.shade600,
-                          ),
-                          label: 'Share',
-                          isActive: false,
-                          onTap: () {
-                            // Share functionality placeholder
-                          },
-                          isDark: isDark,
-                        ),
-                      ),
                     ],
                   ),
                 ),
