@@ -112,16 +112,23 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
   }
 
   Widget _buildHeader(bool isDark) {
-    return Center(
-      child: Text(
-        'Discover',
-        style: TextStyle(
-          fontSize: 26,
-          fontWeight: FontWeight.w800,
-          color: isDark ? Colors.white : const Color(0xFF064E3B),
-          letterSpacing: -0.5,
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Text( 
+          'Discover',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : const Color(0xFF064E3B),
+            letterSpacing: -0.5,
+          ),
         ),
-      ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _PreferencesIconButton(isDark: isDark, onTap: _openPreferences),
+        ),
+      ],
     );
   }
 

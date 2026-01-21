@@ -194,45 +194,48 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                             bottom: false,
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                              child: Row(
+                              child: Stack(
+                                alignment: Alignment.center,
                                 children: [
                                   Text(
                                     'Profile',
                                     style: TextStyle(
-                                      fontSize: 28,
+                                      fontSize: 26,
                                       fontWeight: FontWeight.w800,
                                       color: isDark ? Colors.white : const Color(0xFF064E3B),
                                       letterSpacing: -0.5,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: isDark 
-                                          ? Colors.white.withOpacity(0.08)
-                                          : Colors.white.withOpacity(0.8),
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.settings_outlined,
-                                        color: isDark ? Colors.white70 : Colors.grey.shade700,
-                                      ),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const SettingsView(),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: isDark 
+                                            ? Colors.white.withOpacity(0.08)
+                                            : Colors.white.withOpacity(0.8),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.05),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
                                           ),
-                                        );
-                                      },
+                                        ],
+                                      ),
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.settings_outlined,
+                                          color: isDark ? Colors.white70 : Colors.grey.shade700,
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => const SettingsView(),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ],
