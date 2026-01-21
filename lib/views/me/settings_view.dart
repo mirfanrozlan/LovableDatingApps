@@ -159,13 +159,6 @@ class _SettingsViewState extends State<SettingsView> {
                         );
                       },
                     ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.help_outline),
-                      title: const Text('Help & Support'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.help),
-                    ),
                   ],
                 ),
               ),
