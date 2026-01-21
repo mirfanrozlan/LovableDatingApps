@@ -387,31 +387,43 @@ class _MomentDetailViewState extends State<MomentDetailView> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar with profile picture
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+              // Avatar with profile picture - tappable to view user profile
+              GestureDetector(
+                onTap: () {
+                  // Navigate to user profile (don't navigate to own profile)
+                  if (comment.publishId != widget.controller.currentUserId) {
+                    Navigator.pushNamed(
+                      context,
+                      '/user-profile',
+                      arguments: comment.publishId,
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                    ),
                   ),
-                ),
-                child: CircleAvatar(
-                  radius: isReply ? 12 : 14,
-                  backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  backgroundImage: comment.userMedia.isNotEmpty 
-                      ? NetworkImage(comment.userMedia) 
-                      : null,
-                  child: comment.userMedia.isEmpty
-                      ? Text(
-                          comment.userName.isNotEmpty ? comment.userName[0].toUpperCase() : '?',
-                          style: TextStyle(
-                            fontSize: isReply ? 10 : 11,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF10B981),
-                          ),
-                        )
-                      : null,
+                  child: CircleAvatar(
+                    radius: isReply ? 12 : 14,
+                    backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                    backgroundImage: comment.userMedia.isNotEmpty 
+                        ? NetworkImage(comment.userMedia) 
+                        : null,
+                    child: comment.userMedia.isEmpty
+                        ? Text(
+                            comment.userName.isNotEmpty ? comment.userName[0].toUpperCase() : '?',
+                            style: TextStyle(
+                              fontSize: isReply ? 10 : 11,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF10B981),
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),

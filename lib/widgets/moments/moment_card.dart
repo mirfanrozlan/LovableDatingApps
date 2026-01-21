@@ -153,39 +153,51 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                 // Header Row
                 Row(
                   children: [
-                    // Avatar with gradient border
-                    Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
+                    // Avatar with gradient border - tappable to view user profile
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to user profile (don't navigate to own profile)
+                        if (post.userId != widget.currentUserId) {
+                          Navigator.pushNamed(
+                            context,
+                            '/user-profile',
+                            arguments: post.userId,
+                          );
+                        }
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                         ),
-                        child: CircleAvatar(
-                          radius: 22,
-                          backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
-                          backgroundImage:
-                              post.userMedia.isNotEmpty
-                                  ? NetworkImage(post.userMedia)
-                                  : null,
-                          child: post.userMedia.isEmpty 
-                              ? Text(
-                                  post.initials,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF10B981),
-                                  ),
-                                ) 
-                              : null,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                          ),
+                          child: CircleAvatar(
+                            radius: 22,
+                            backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
+                            backgroundImage:
+                                post.userMedia.isNotEmpty
+                                    ? NetworkImage(post.userMedia)
+                                    : null,
+                            child: post.userMedia.isEmpty 
+                                ? Text(
+                                    post.initials,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF10B981),
+                                    ),
+                                  ) 
+                                : null,
+                          ),
                         ),
                       ),
                     ),
