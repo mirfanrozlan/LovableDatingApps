@@ -410,10 +410,10 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
       margin: widget.flat ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: widget.isDetailView 
-            ? const BorderRadius.vertical(top: Radius.circular(20))
+        borderRadius: widget.flat || widget.isDetailView 
+            ? BorderRadius.zero
             : BorderRadius.circular(20),
-        boxShadow: widget.isDetailView ? null : [
+        boxShadow: widget.flat || widget.isDetailView ? null : [
           BoxShadow(
             color: isDark 
                 ? Colors.black.withOpacity(0.3)

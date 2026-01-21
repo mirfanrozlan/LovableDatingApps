@@ -161,7 +161,7 @@ class MomentList extends StatelessWidget {
               return false;
             },
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
               itemCount:
                   controller.moments.length +
                   (controller.loading && controller.hasMore ? 1 : 0),
@@ -183,36 +183,64 @@ class MomentList extends StatelessWidget {
                     ),
                   );
                 }
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: MomentCard(
-                    post: controller.moments[i],
-                    onLike:
-                        () => controller.likePost(
-                          controller.moments[i].postId,
-                          controller.moments[i].userId,
+                
+                final isFirst = i == 0;
+                final isLast = i == controller.moments.length - 1;
+
+                return Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: isFirst ? const Radius.circular(20) : Radius.zero,
+                          bottom: isLast ? const Radius.circular(20) : Radius.zero,
                         ),
-                    onLoadComments:
-                        () => controller.loadComments(controller.moments[i].postId),
-                    onAddComment:
-                        (content, {parentId, replyId}) => controller.addComment(
-                          controller.moments[i].postId,
-                          content,
-                          parentId: parentId,
-                          replyId: replyId,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: MomentCard(
+                        post: controller.moments[i],
+                        onLike:
+                            () => controller.likePost(
+                              controller.moments[i].postId,
+                              controller.moments[i].userId,
+                            ),
+                        onLoadComments:
+                            () => controller.loadComments(controller.moments[i].postId),
+                        onAddComment:
+                            (content, {parentId, replyId}) => controller.addComment(
+                              controller.moments[i].postId,
+                              content,
+                              parentId: parentId,
+                              replyId: replyId,
+                            ),
+                        onLikeComment:
+                            (commentId, {parentId}) =>
+                                controller.likeComment(commentId, parentId),
+                        onDeleteComment:
+                            (commentId) => controller.deleteComment(
+                              commentId,
+                              controller.moments[i].postId,
+                            ),
+                        onDeletePost: (postId) => controller.deletePost(postId),
+                        currentUserId: controller.currentUserId,
+                        controller: controller,
+                        flat: true,
+                        showDecoration: false,
+                      ),
+                    ),
+                    if (!isLast)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: isDark 
+                              ? Colors.white.withOpacity(0.06)
+                              : Colors.grey.shade100,
                         ),
-                    onLikeComment:
-                        (commentId, {parentId}) =>
-                            controller.likeComment(commentId, parentId),
-                    onDeleteComment:
-                        (commentId) => controller.deleteComment(
-                          commentId,
-                          controller.moments[i].postId,
-                        ),
-                    onDeletePost: (postId) => controller.deletePost(postId),
-                    currentUserId: controller.currentUserId,
-                    controller: controller,
-                  ),
+                      ),
+                  ],
                 );
               },
             ),
