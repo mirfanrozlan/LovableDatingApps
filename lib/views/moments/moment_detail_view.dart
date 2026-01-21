@@ -247,60 +247,9 @@ class _MomentDetailViewState extends State<MomentDetailView> {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              children: [
-                Text(
-                  'Comments',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_comments.length}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF10B981),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Wrap all comments in a single container
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.04) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark 
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.grey.shade200,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: roots.map((root) => _buildCommentNode(root, byParent)).toList(),
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: roots.map((root) => _buildCommentNode(root, byParent)).toList(),
     );
   }
 
@@ -410,9 +359,9 @@ class _MomentDetailViewState extends State<MomentDetailView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark 
-            ? Colors.white.withOpacity(isReply ? 0.02 : 0.04)
-            : (isReply ? const Color(0xFFFAFAFA) : Colors.white),
+        color: isReply 
+            ? (isDark ? Colors.white.withOpacity(0.02) : const Color(0xFFFAFAFA))
+            : Colors.transparent,
         border: Border(
           bottom: BorderSide(
             color: isDark 
@@ -669,33 +618,63 @@ class _MomentDetailViewState extends State<MomentDetailView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      MomentCard(
-                        post: widget.post,
-                        onLike:
-                            () => widget.controller.likePost(
-                              widget.post.postId,
-                              widget.post.userId,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark 
+                                    ? Colors.black.withOpacity(0.3)
+                                    : const Color(0xFF10B981).withOpacity(0.08),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: isDark 
+                                  ? Colors.white.withOpacity(0.08)
+                                  : Colors.grey.shade200,
                             ),
-                        onLoadComments: () async => [],
-                        onAddComment:
-                            (_, {parentId, replyId}) async => null,
-                        onLikeComment: (_) async => null,
-                        onDeleteComment: (_) async => false,
-                        onDeletePost: (postId) async {
-                          final success = await widget.controller.deletePost(
-                            postId,
-                          );
-                          if (success && mounted) {
-                            Navigator.pop(context);
-                          }
-                          return success;
-                        },
-                        currentUserId: widget.controller.currentUserId,
-                        isDetailView: true,
-                        controller: widget.controller,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MomentCard(
+                                post: widget.post,
+                                onLike:
+                                    () => widget.controller.likePost(
+                                      widget.post.postId,
+                                      widget.post.userId,
+                                    ),
+                                onLoadComments: () async => [],
+                                onAddComment:
+                                    (_, {parentId, replyId}) async => null,
+                                onLikeComment: (_) async => null,
+                                onDeleteComment: (_) async => false,
+                                onDeletePost: (postId) async {
+                                  final success = await widget.controller.deletePost(
+                                    postId,
+                                  );
+                                  if (success && mounted) {
+                                    Navigator.pop(context);
+                                  }
+                                  return success;
+                                },
+                                currentUserId: widget.controller.currentUserId,
+                                isDetailView: true,
+                                controller: widget.controller,
+                                commentCount: _comments.length,
+                                showDecoration: false,
+                              ),
+                              _buildCommentList(),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      _buildCommentList(),
                       const SizedBox(height: 100),
                     ],
                   ),

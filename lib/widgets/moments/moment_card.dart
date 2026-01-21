@@ -18,6 +18,8 @@ class MomentCard extends StatefulWidget {
   final bool flat;
   final bool isDetailView;
   final MomentsController? controller;
+  final int? commentCount;
+  final bool showDecoration;
 
   const MomentCard({
     super.key,
@@ -32,7 +34,10 @@ class MomentCard extends StatefulWidget {
     this.flat = false,
     this.isDetailView = false,
     this.controller,
+    this.commentCount,
+    this.showDecoration = true,
   });
+
 
   @override
   State<MomentCard> createState() => _MomentCardState();
@@ -130,28 +135,18 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
-    return Container(
-      margin: widget.flat ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: isDark 
-                ? Colors.black.withOpacity(0.3)
-                : const Color(0xFF10B981).withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _navigateToDetail,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+    final content = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.isDetailView ? null : _navigateToDetail,
+        splashColor: widget.isDetailView ? Colors.transparent : null,
+        highlightColor: widget.isDetailView ? Colors.transparent : null,
+        hoverColor: widget.isDetailView ? Colors.transparent : null,
+        borderRadius: widget.isDetailView 
+            ? const BorderRadius.vertical(top: Radius.circular(20))
+            : BorderRadius.circular(20),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, widget.isDetailView ? 0 : 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -349,7 +344,9 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                     color: isDark 
                         ? Colors.white.withOpacity(0.03)
                         : const Color(0xFFF8FFFE),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: widget.isDetailView
+                        ? const BorderRadius.vertical(top: Radius.circular(14))
+                        : BorderRadius.circular(14),
                   ),
                   child: Row(
                     children: [
@@ -390,7 +387,7 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                             size: 20,
                             color: isDark ? Colors.white60 : Colors.grey.shade600,
                           ),
-                          label: '${post.commentsCount}',
+                          label: '${widget.commentCount ?? post.commentsCount}',
                           isActive: false,
                           onTap: _navigateToDetail,
                           isDark: isDark,
@@ -399,11 +396,34 @@ class _MomentCardState extends State<MomentCard> with SingleTickerProviderStateM
                     ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (!widget.showDecoration) {
+      return content;
+    }
+
+    return Container(
+      margin: widget.flat ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: widget.isDetailView 
+            ? const BorderRadius.vertical(top: Radius.circular(20))
+            : BorderRadius.circular(20),
+        boxShadow: widget.isDetailView ? null : [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : const Color(0xFF10B981).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: content,
     );
   }
 }
@@ -429,6 +449,9 @@ class _ActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
