@@ -20,7 +20,6 @@ import 'views/me/account_view.dart';
 import 'views/me/privacy_view.dart';
 import 'views/me/notifications_view.dart';
 import 'views/me/edit_profile_view.dart';
-import 'views/me/help_support_view.dart';
 import 'views/me/preferences_view.dart';
 import 'views/profile/user_profile_view.dart';
 
@@ -44,7 +43,6 @@ class AppRoutes {
   static const privacy = '/privacy';
   static const notifications = '/notifications';
   static const editProfile = '/edit-profile';
-  static const help = '/help';
   static const preferences = '/preferences';
   static const home = '/home';
   static const userProfile = '/user-profile';
@@ -71,7 +69,6 @@ class AppRoutes {
     privacy: (_) => const PrivacyView(),
     notifications: (_) => const NotificationsView(),
     editProfile: (_) => const EditProfileView(),
-    help: (_) => const HelpSupportView(),
     preferences: (_) => const PreferencesView(),
     home: (_) => const HomeView(),
     userProfile: (_) => const UserProfileView(),
