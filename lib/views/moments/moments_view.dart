@@ -101,145 +101,146 @@ class _MomentsViewState extends State<MomentsView> with SingleTickerProviderStat
                 ),
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header
-                SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: Row(
-                      children: [
-                        // Logo/Icon
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
+            NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  // Header
+                  SliverToBoxAdapter(
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                        child: Row(
+                          children: [
+                            // Logo/Icon
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF10B981).withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            // Title
+                            Text(
+                              'Moments',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : const Color(0xFF064E3B),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const Spacer(),
+                            // Notification icon
+                            Container(
+                              decoration: BoxDecoration(
+                                color: isDark 
+                                    ? Colors.white.withOpacity(0.08)
+                                    : Colors.white.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.notifications_outlined,
+                                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                                ),
+                                onPressed: () {},
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Tab Bar
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Container(
+                        height: 48,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isDark 
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicator: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF10B981), Color(0xFF059669)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
                             ),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFF10B981).withOpacity(0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        // Title
-                        Text(
-                          'Moments',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF064E3B),
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Notification icon
-                        Container(
-                          decoration: BoxDecoration(
-                            color: isDark 
-                                ? Colors.white.withOpacity(0.08)
-                                : Colors.white.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.notifications_outlined,
-                              color: isDark ? Colors.white70 : Colors.grey.shade700,
-                            ),
-                            onPressed: () {},
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          labelColor: Colors.white,
+                          unselectedLabelColor: isDark ? Colors.white60 : Colors.grey.shade600,
+                          labelStyle: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Tab Bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  child: Container(
-                    height: 48,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: isDark 
-                          ? Colors.white.withOpacity(0.08)
-                          : Colors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF10B981).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                          unselectedLabelStyle: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
                           ),
-                        ],
+                          tabs: const [
+                            Tab(text: 'Discover'),
+                            Tab(text: 'Friends'),
+                          ],
+                        ),
                       ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      dividerColor: Colors.transparent,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: isDark ? Colors.white60 : Colors.grey.shade600,
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                      tabs: const [
-                        Tab(text: 'Discover'),
-                        Tab(text: 'Friends'),
-                      ],
                     ),
                   ),
-                ),
-                
-                // Content
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      MomentList(controller: _allMomentsController),
-                      MomentList(controller: _friendMomentsController),
-                    ],
-                  ),
-                ),
-              ],
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  MomentList(controller: _allMomentsController),
+                  MomentList(controller: _friendMomentsController),
+                ],
+              ),
             ),
             
             // FAB
