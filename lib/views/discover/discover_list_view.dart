@@ -3,10 +3,10 @@ import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../controllers/discover_controller.dart';
 import '../../models/discover_profile_model.dart';
-import '../../themes/theme.dart';
-import '../../routes.dart';
 import '../../services/auth_service.dart';
 import '../../services/moments_service.dart';
+import '../../routes.dart';
+import '../../themes/theme.dart';
 
 class DiscoverListView extends StatefulWidget {
   const DiscoverListView({super.key});
@@ -24,29 +24,6 @@ class _DiscoverListViewState extends State<DiscoverListView> {
     _controller.addListener(() {
       if (mounted) setState(() {});
     });
-    _initController();
-  }
-
-  Future<void> _initController() async {
-    final ms = MomentsService();
-    final userId = await ms.getCurrentUserId();
-    if (userId != null) {
-      final prefs = await AuthService().getPreferences(userId);
-      if (mounted && prefs != null) {
-        String? gender = prefs['pref_gender']?.toString();
-        int? minAge = int.tryParse(prefs['pref_age_min']?.toString() ?? '');
-        int? maxAge = int.tryParse(prefs['pref_age_max']?.toString() ?? '');
-        int? distance = int.tryParse(prefs['pref_location']?.toString() ?? '');
-
-        _controller.updateFilters(
-          gender: gender,
-          minAge: minAge,
-          maxAge: maxAge,
-          distance: distance,
-        );
-        return;
-      }
-    }
     if (mounted && _controller.profiles.isEmpty) {
       _controller.loadProfiles();
     }
@@ -54,7 +31,6 @@ class _DiscoverListViewState extends State<DiscoverListView> {
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
@@ -63,47 +39,83 @@ class _DiscoverListViewState extends State<DiscoverListView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
-      useGradient: false,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Center(
-              child: Text(
-                'Discover',
-                style: TextStyle(
-                  fontSize: 26, 
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : const Color(0xFF064E3B),
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Browse and chat instantly',
-                style: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child:
-                  _controller.loading && _controller.profiles.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
-                      : _controller.profiles.isEmpty
-                      ? const Center(child: Text('No profiles found'))
-                      : ListView.separated(
-                        itemCount: _controller.profiles.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder:
-                            (context, i) =>
-                                _DiscoverListCard(p: _controller.profiles[i]),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors:
+                isDark
+                    ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
+                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 600),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Text(
+                        'Discover',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF064E3B),
+                          letterSpacing: -0.5,
+                        ),
                       ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: _PreferencesIconButton(onTap: _openPreferences),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Browse and chat instantly',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child:
+                        _controller.loading && _controller.profiles.isEmpty
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                  color: const Color(0xFF10B981),
+                                ),
+                              )
+                            : _controller.profiles.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No profiles found',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white38 : Colors.grey,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                              itemCount: _controller.profiles.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              itemBuilder: (context, i) => _DiscoverListCard(p: _controller.profiles[i]),
+                            ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -129,105 +141,145 @@ class _DiscoverListViewState extends State<DiscoverListView> {
             : int.tryParse((prefs?['pref_location'] ?? '25').toString()) ?? 25;
 
     if (!mounted) return;
+    final isDarkGlobal = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkGlobal ? const Color(0xFF121212) : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final labelStyle = TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black87,
+            );
             return SafeArea(
               child: SingleChildScrollView(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
-                    16,
                     20,
-                    16,
-                    16 + MediaQuery.of(context).viewInsets.bottom,
+                    24,
+                    20,
+                    20 + MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.tune, color: Color(0xFF10B981)),
-                          SizedBox(width: 8),
+                        children: [
+                          const Icon(Icons.tune_rounded, color: Color(0xFF10B981)),
+                          const SizedBox(width: 12),
                           Text(
                             'Discovery Preferences',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF064E3B),
+                            ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 32),
+                      const Divider(height: 8),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Attracted To',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
+                      Text('Attracted To', style: labelStyle),
+                      const SizedBox(height: 12),
                       Wrap(
-                        spacing: 8,
-                        children:
-                            ['Male', 'Female'].map((g) {
-                              final selected = gender == g;
-                              return ChoiceChip(
-                                label: Text(g),
-                                selected: selected,
-                                selectedColor: const Color(0xFF10B981),
-                                labelStyle: TextStyle(
-                                  color:
-                                      selected ? Colors.white : Colors.black87,
-                                ),
-                                onSelected: (_) => setState(() => gender = g),
-                              );
-                            }).toList(),
+                        spacing: 12,
+                        children: ['Male', 'Female', 'Both'].map((g) {
+                          final isSelected = gender == g;
+                          return ChoiceChip(
+                            label: Text(g),
+                            selected: isSelected,
+                            onSelected: (val) {
+                              if (val) setModalState(() => gender = g);
+                            },
+                            selectedColor: const Color(0xFF10B981).withOpacity(0.15),
+                            backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                            labelStyle: TextStyle(
+                              color: isSelected ? const Color(0xFF10B981) : (isDark ? Colors.white70 : Colors.black54),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFF10B981) : (isDark ? Colors.white12 : Colors.transparent),
+                                width: 1,
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Age Range',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      RangeSlider(
-                        values: RangeValues(
-                          minAge.toDouble(),
-                          maxAge.toDouble(),
-                        ),
-                        min: 18,
-                        max: 100,
-                        divisions: 82,
-                        activeColor: const Color(0xFF10B981),
-                        onChanged: (v) {
-                          setState(() {
-                            minAge = v.start.round();
-                            maxAge = v.end.round();
-                          });
-                        },
-                      ),
+                      const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [Text('Min: $minAge'), Text('Max: $maxAge')],
+                        children: [
+                          Text('Age Range', style: labelStyle),
+                          Text(
+                            '$minAge - $maxAge',
+                            style: const TextStyle(
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Distance (km)',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFF10B981),
+                          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                          thumbColor: const Color(0xFF10B981),
+                          overlayColor: const Color(0xFF10B981).withOpacity(0.2),
+                        ),
+                        child: RangeSlider(
+                          values: RangeValues(minAge.toDouble(), maxAge.toDouble()),
+                          min: 18,
+                          max: 100,
+                          divisions: 82,
+                          onChanged: (v) {
+                            setModalState(() {
+                              minAge = v.start.round();
+                              maxAge = v.end.round();
+                            });
+                          },
+                        ),
                       ),
-                      Slider(
-                        value: distance.toDouble(),
-                        min: 0,
-                        max: 100,
-                        divisions: 100,
-                        activeColor: const Color(0xFF10B981),
-                        onChanged: (v) => setState(() => distance = v.round()),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Maximum Distance', style: labelStyle),
+                          Text(
+                            '$distance km',
+                            style: const TextStyle(
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('$distance km'),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFF10B981),
+                          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                          thumbColor: const Color(0xFF10B981),
+                        ),
+                        child: Slider(
+                          value: distance.toDouble(),
+                          min: 1,
+                          max: 100,
+                          divisions: 99,
+                          onChanged: (v) => setModalState(() => distance = v.round()),
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 40),
                       ElevatedButton(
                         onPressed: () async {
                           final ok = await AuthService().updateProfile(
@@ -254,11 +306,8 @@ class _DiscoverListViewState extends State<DiscoverListView> {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                  ok
-                                      ? 'Preferences updated'
-                                      : 'Failed to update preferences',
-                                ),
+                                content: Text(ok ? 'Preferences updated' : 'Update failed'),
+                                backgroundColor: ok ? const Color(0xFF10B981) : Colors.red,
                               ),
                             );
                             if (ok) {
@@ -273,11 +322,12 @@ class _DiscoverListViewState extends State<DiscoverListView> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
                         ),
-                        child: const Text('Save Preferences'),
+                        child: const Text('Save Preferences', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -294,92 +344,132 @@ class _DiscoverListViewState extends State<DiscoverListView> {
 class _DiscoverListCard extends StatelessWidget {
   final DiscoverProfileModel p;
   const _DiscoverListCard({required this.p});
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child:
-                  p.media.isNotEmpty
+      color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      elevation: isDark ? 0 : 2,
+      shadowColor: Colors.black12,
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.discoverDetail,
+            arguments: p,
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: p.media.isNotEmpty
                       ? Image.network(
-                        p.media,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (ctx, err, stack) => Container(
-                              color: Colors.grey.shade300,
-                              width: 64,
-                              height: 64,
-                            ),
-                      )
-                      : Container(
-                        color: Colors.grey.shade300,
-                        width: 64,
-                        height: 64,
-                      ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '${p.name}, ${p.age}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(width: 4),
-                      if (p.subscription == 'premium' ||
-                          p.subscription == 'plus')
-                        const Icon(
-                          Icons.verified,
-                          color: Colors.blue,
-                          size: 16,
-                        ),
-                    ],
-                  ),
-                  Text('${p.city}, ${p.country}'),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: p.interests.take(4).map((t) => _Chip(t)).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      OutlinedButton(
-                        onPressed:
-                            () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.discoverDetail,
-                              arguments: p,
-                            ),
-                        child: const Text('View Profile'),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed:
-                            () => Navigator.pushNamed(context, AppRoutes.chat),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                        ),
-                        child: const Text('Chat'),
-                      ),
-                    ],
-                  ),
-                ],
+                          p.media,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stack) => _buildPlaceholder(isDark),
+                        )
+                      : _buildPlaceholder(isDark),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          p.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${p.age}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDark ? Colors.white70 : Colors.grey.shade600,
+                          ),
+                        ),
+                        if (p.subscription == 'premium') ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.verified, color: Color(0xFF10B981), size: 16),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      p.city.isNotEmpty ? '${p.city}, ${p.country}' : 'Nearby',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white54 : Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (p.interests.isNotEmpty)
+                      Wrap(
+                        spacing: 6,
+                        children: p.interests.take(2).map((i) => _buildMiniChip(i, isDark)).toList(),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF10B981)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(bool isDark) {
+    return Container(
+      width: 80,
+      height: 80,
+      color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F4F6),
+      child: Icon(Icons.person, color: isDark ? Colors.white10 : Colors.black12, size: 40),
+    );
+  }
+
+  Widget _buildMiniChip(String label, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFDCFCE7)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white70 : const Color(0xFF10B981),
         ),
       ),
     );
@@ -392,8 +482,9 @@ class _PreferencesIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: const Color(0xFFF3F4F6),
+      color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -403,23 +494,6 @@ class _PreferencesIconButton extends StatelessWidget {
           child: Icon(Icons.tune, color: Color(0xFF10B981)),
         ),
       ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String t;
-  const _Chip(this.t);
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Text(t),
     );
   }
 }

@@ -3,6 +3,10 @@ import '../models/discover_profile_model.dart';
 import '../services/discover_service.dart';
 
 class DiscoverController extends ChangeNotifier {
+  static final DiscoverController _instance = DiscoverController._internal();
+  factory DiscoverController() => _instance;
+  DiscoverController._internal();
+
   final _service = DiscoverService();
   List<DiscoverProfileModel> _profiles = [];
   bool _loading = false;
@@ -18,6 +22,7 @@ class DiscoverController extends ChangeNotifier {
   int? _minAge;
   int? _maxAge;
 
+
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
   
@@ -25,6 +30,8 @@ class DiscoverController extends ChangeNotifier {
   String? get gender => _gender;
   int? get minAge => _minAge;
   int? get maxAge => _maxAge;
+  bool get isDiscoveryDarkMode => true; // Replaced during cleanup
+
 
   void updateFilters({
     int? distance,

@@ -56,14 +56,12 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
@@ -152,105 +150,145 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
             : int.tryParse((prefs?['pref_location'] ?? '25').toString()) ?? 25;
 
     if (!mounted) return;
+    final isDarkGlobal = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkGlobal ? const Color(0xFF121212) : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setModalState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final labelStyle = TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black87,
+            );
             return SafeArea(
               child: SingleChildScrollView(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
-                    16,
                     20,
-                    16,
-                    16 + MediaQuery.of(context).viewInsets.bottom,
+                    24,
+                    20,
+                    20 + MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.tune, color: Color(0xFF10B981)),
-                          SizedBox(width: 8),
+                        children: [
+                          const Icon(Icons.tune_rounded, color: Color(0xFF10B981)),
+                          const SizedBox(width: 12),
                           Text(
                             'Discovery Preferences',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF064E3B),
+                            ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 32),
+                      const Divider(height: 8),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Attracted To',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
+                      Text('Attracted To', style: labelStyle),
+                      const SizedBox(height: 12),
                       Wrap(
-                        spacing: 8,
-                        children:
-                            ['Male', 'Female'].map((g) {
-                              final selected = gender == g;
-                              return ChoiceChip(
-                                label: Text(g),
-                                selected: selected,
-                                selectedColor: const Color(0xFF10B981),
-                                labelStyle: TextStyle(
-                                  color:
-                                      selected ? Colors.white : Colors.black87,
-                                ),
-                                onSelected: (_) => setState(() => gender = g),
-                              );
-                            }).toList(),
+                        spacing: 12,
+                        children: ['Male', 'Female', 'Both'].map((g) {
+                          final isSelected = gender == g;
+                          return ChoiceChip(
+                            label: Text(g),
+                            selected: isSelected,
+                            onSelected: (val) {
+                              if (val) setModalState(() => gender = g);
+                            },
+                            selectedColor: const Color(0xFF10B981).withOpacity(0.15),
+                            backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                            labelStyle: TextStyle(
+                              color: isSelected ? const Color(0xFF10B981) : (isDark ? Colors.white70 : Colors.black54),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFF10B981) : (isDark ? Colors.white12 : Colors.transparent),
+                                width: 1,
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Age Range',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      RangeSlider(
-                        values: RangeValues(
-                          minAge.toDouble(),
-                          maxAge.toDouble(),
-                        ),
-                        min: 18,
-                        max: 100,
-                        divisions: 82,
-                        activeColor: const Color(0xFF10B981),
-                        onChanged: (v) {
-                          setState(() {
-                            minAge = v.start.round();
-                            maxAge = v.end.round();
-                          });
-                        },
-                      ),
+                      const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [Text('Min: $minAge'), Text('Max: $maxAge')],
+                        children: [
+                          Text('Age Range', style: labelStyle),
+                          Text(
+                            '$minAge - $maxAge',
+                            style: const TextStyle(
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Distance (km)',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFF10B981),
+                          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                          thumbColor: const Color(0xFF10B981),
+                          overlayColor: const Color(0xFF10B981).withOpacity(0.2),
+                        ),
+                        child: RangeSlider(
+                          values: RangeValues(minAge.toDouble(), maxAge.toDouble()),
+                          min: 18,
+                          max: 100,
+                          divisions: 82,
+                          onChanged: (v) {
+                            setModalState(() {
+                              minAge = v.start.round();
+                              maxAge = v.end.round();
+                            });
+                          },
+                        ),
                       ),
-                      Slider(
-                        value: distance.toDouble(),
-                        min: 0,
-                        max: 100,
-                        divisions: 100,
-                        activeColor: const Color(0xFF10B981),
-                        onChanged: (v) => setState(() => distance = v.round()),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Maximum Distance', style: labelStyle),
+                          Text(
+                            '$distance km',
+                            style: const TextStyle(
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('$distance km'),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFF10B981),
+                          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                          thumbColor: const Color(0xFF10B981),
+                        ),
+                        child: Slider(
+                          value: distance.toDouble(),
+                          min: 1,
+                          max: 100,
+                          divisions: 99,
+                          onChanged: (v) => setModalState(() => distance = v.round()),
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 40),
                       ElevatedButton(
                         onPressed: () async {
                           final ok = await AuthService().updateProfile(
@@ -277,11 +315,8 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                  ok
-                                      ? 'Preferences updated'
-                                      : 'Failed to update preferences',
-                                ),
+                                content: Text(ok ? 'Preferences updated' : 'Update failed'),
+                                backgroundColor: ok ? const Color(0xFF10B981) : Colors.red,
                               ),
                             );
                             if (ok) {
@@ -296,11 +331,12 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF10B981),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 56),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
                         ),
-                        child: const Text('Save Preferences'),
+                        child: const Text('Save Preferences', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -310,7 +346,10 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
           },
         );
       },
-    );
+    ).then((_) {
+      // Finalize the theme state if we changed it in the modal but didn't save?
+      // Actually setDiscoveryDarkMode(val) updates it immediately.
+    });
   }
 
   Widget _buildEmptyState(bool isDark) {

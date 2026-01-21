@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../models/discover_profile_model.dart';
+import '../../controllers/discover_controller.dart';
 
 class DiscoverDetailView extends StatelessWidget {
   const DiscoverDetailView({super.key});
@@ -9,8 +10,7 @@ class DiscoverDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = ModalRoute.of(context)?.settings.arguments as DiscoverProfileModel?;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = DiscoverController().isDiscoveryDarkMode;
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       useGradient: false,
