@@ -82,6 +82,10 @@ class _MomentDetailViewState extends State<MomentDetailView> {
       if (newComment != null && mounted) {
         _input.clear();
         setState(() {
+          // Auto-expand the parent comment's replies so the new reply is visible
+          if (parentId != null) {
+            _expandedReplies.add(parentId);
+          }
           _replyingTo = null;
           _comments.add(newComment);
         });
