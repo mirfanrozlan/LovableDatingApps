@@ -128,7 +128,18 @@ class _ChatViewState extends State<ChatView> {
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Icon(
+                            Icons.arrow_back_rounded,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                          ),
+                          iconSize: 22,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 12),
+                         CircleAvatar(
                           backgroundImage:
                               chat?.avatarUrl != null &&
                                       chat!.avatarUrl!.isNotEmpty
