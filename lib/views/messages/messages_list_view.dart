@@ -68,81 +68,86 @@ class _MessagesListViewState extends State<MessagesListView> {
             child: Column(
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.chat_bubble, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _searchOpen
-                          ? Material(
-                              color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.search, size: 18),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _search,
-                                        focusNode: _searchFocus,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Search chats',
-                                          border: InputBorder.none,
-                                        ),
-                                      ),
+                    if (_searchOpen)
+                      Expanded(
+                        child: Material(
+                          color: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _search,
+                                    focusNode: _searchFocus,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Search chats',
+                                      border: InputBorder.none,
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.close, size: 18),
-                                      onPressed: () {
-                                        _search.clear();
-                                        setState(() => _searchOpen = false);
-                                      },
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            )
-                          : const Text(
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  onPressed: () {
+                                    _search.clear();
+                                    setState(() => _searchOpen = false);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else 
+                      Expanded(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Text(
                               'Chats',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : const Color(0xFF064E3B),
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                    ),
-                    const SizedBox(width: 12),
-                    InkWell(
-                      onTap: () {
-                        setState(() => _searchOpen = true);
-                        _searchFocus.requestFocus();
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF059669)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF10B981).withOpacity(0.35),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() => _searchOpen = true);
+                                  _searchFocus.requestFocus();
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withOpacity(0.35),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.search, color: Colors.white, size: 20),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.search, color: Colors.white, size: 20),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 12),

@@ -386,49 +386,83 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                         
                         // Moments list
                         if (_controller.moments.isNotEmpty)
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate((context, index) {
-                              final moment = _controller.moments[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: MomentCard(
-                                  post: moment,
-                                  onLike:
-                                      () => _controller.likePost(
-                                        moment.postId,
-                                        moment.userId,
-                                      ),
-                                  onLoadComments:
-                                      () =>
-                                          _controller.loadComments(moment.postId),
-                                  onAddComment:
-                                      (content, {parentId, replyId}) =>
-                                          _controller.addComment(
-                                            moment.postId,
-                                            content,
-                                            parentId: parentId,
-                                            replyId: replyId,
-                                          ),
-                                  onLikeComment:
-                                      (id, {publishId}) =>
-                                          _controller.likeComment(id, publishId),
-                                  onDeleteComment:
-                                      (id) => _controller.deleteComment(
-                                        id,
-                                        moment.postId,
-                                      ),
-                                  onDeletePost:
-                                      (postId) => _controller.deletePost(postId),
-                                  currentUserId: _controller.currentUserId,
-                                  controller: _controller,
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            sliver: SliverToBoxAdapter(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: isDark 
+                                          ? Colors.black.withOpacity(0.2)
+                                          : const Color(0xFF10B981).withOpacity(0.05),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                              );
-                            }, childCount: _controller.moments.length),
+                                clipBehavior: Clip.antiAlias,
+                                child: Column(
+                                  children: List.generate(_controller.moments.length, (index) {
+                                    final moment = _controller.moments[index];
+                                    final isLast = index == _controller.moments.length - 1;
+                                    
+                                    return Column(
+                                      children: [
+                                        MomentCard(
+                                          post: moment,
+                                          onLike:
+                                              () => _controller.likePost(
+                                                moment.postId,
+                                                moment.userId,
+                                              ),
+                                          onLoadComments:
+                                              () =>
+                                                  _controller.loadComments(moment.postId),
+                                          onAddComment:
+                                              (content, {parentId, replyId}) =>
+                                                  _controller.addComment(
+                                                    moment.postId,
+                                                    content,
+                                                    parentId: parentId,
+                                                    replyId: replyId,
+                                                  ),
+                                          onLikeComment:
+                                              (id, {publishId}) =>
+                                                  _controller.likeComment(id, publishId),
+                                          onDeleteComment:
+                                              (id) => _controller.deleteComment(
+                                                id,
+                                                moment.postId,
+                                              ),
+                                          onDeletePost:
+                                              (postId) => _controller.deletePost(postId),
+                                          currentUserId: _controller.currentUserId,
+                                          controller: _controller,
+                                          flat: true,
+                                          showDecoration: false,
+                                        ),
+                                        if (!isLast)
+                                          Divider(
+                                            height: 1,
+                                            thickness: 1,
+                                            color: isDark 
+                                                ? Colors.white.withOpacity(0.06)
+                                                : Colors.grey.shade100,
+                                          ),
+                                      ],
+                                    );
+                                  }),
+                                ),
+                              ),
+                            ),
                           ),
                         
                         // Bottom padding
                         const SliverToBoxAdapter(
-                          child: SizedBox(height: 20),
+                          child: SizedBox(height: 30),
                         ),
                       ],
                     ),

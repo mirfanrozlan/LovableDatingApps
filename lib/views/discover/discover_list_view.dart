@@ -60,6 +60,7 @@ class _DiscoverListViewState extends State<DiscoverListView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       useGradient: false,
@@ -68,19 +69,16 @@ class _DiscoverListViewState extends State<DiscoverListView> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              children: [
-                const Text(
-                  'Discover',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            Center(
+              child: Text(
+                'Discover',
+                style: TextStyle(
+                  fontSize: 26, 
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF064E3B),
+                  letterSpacing: -0.5,
                 ),
-                const Spacer(),
-                _PreferencesIconButton(onTap: _openPreferences),
-                const SizedBox(width: 8),
-                const Icon(Icons.view_agenda_outlined),
-                const SizedBox(width: 12),
-                const Icon(Icons.grid_view),
-              ],
+              ),
             ),
             const SizedBox(height: 6),
             Align(

@@ -110,44 +110,16 @@ class _MomentsViewState extends State<MomentsView> with SingleTickerProviderStat
                       bottom: false,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                        child: Row(
-                          children: [
-                            // Logo/Icon
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF10B981).withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.auto_awesome_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                        child: Center(
+                          child: Text(
+                            'Moments',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF064E3B),
+                              letterSpacing: -0.5,
                             ),
-                            const SizedBox(width: 14),
-                            // Title
-                            Text(
-                              'Moments',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : const Color(0xFF064E3B),
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
