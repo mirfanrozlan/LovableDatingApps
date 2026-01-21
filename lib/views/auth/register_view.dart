@@ -10,6 +10,7 @@ import '../../routes.dart';
 import '../../services/malaysia_postcode_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:async';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -51,6 +52,10 @@ class _RegisterViewState extends State<RegisterView> {
   List<String> _stateList = [];
   List<String> _cityList = [];
   List<String> _postcodeList = [];
+
+  // OTP countdown
+  Timer? _otpTimer;
+  int _otpCountdown = 0;
 
   @override
   void initState() {
@@ -106,6 +111,7 @@ class _RegisterViewState extends State<RegisterView> {
     _address.dispose();
     _phone.dispose();
     _otp.dispose();
+    _otpTimer?.cancel();
     super.dispose();
   }
 
@@ -453,11 +459,102 @@ class _RegisterViewState extends State<RegisterView> {
           isDark: isDark,
         ),
         const SizedBox(height: 16),
-        _buildTextField(
-          controller: _otp,
-          hint: 'OTP',
-          icon: Icons.security,
-          isDark: isDark,
+        Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Icon(
+                  Icons.security,
+                  color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                  size: 22,
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _otp,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'OTP',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              Container(
+                height: 40,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  gradient: _otpCountdown > 0
+                      ? LinearGradient(
+                          colors: [Colors.grey.shade400, Colors.grey.shade500],
+                        )
+                      : const LinearGradient(
+                          colors: [Color(0xFF10B981), Color(0xFF059669)],
+                        ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _otpCountdown > 0
+                        ? null
+                        : () {
+                            // TODO: Implement OTP request logic
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('OTP requested')),
+                            );
+                            // Start 2-minute countdown
+                            setState(() {
+                              _otpCountdown = 120; // 2 minutes in seconds
+                            });
+                            _otpTimer?.cancel();
+                            _otpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                              if (_otpCountdown > 0) {
+                                setState(() {
+                                  _otpCountdown--;
+                                });
+                              } else {
+                                timer.cancel();
+                              }
+                            });
+                          },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Center(
+                        child: Text(
+                          _otpCountdown > 0
+                              ? '${(_otpCountdown ~/ 60).toString().padLeft(2, '0')}:${(_otpCountdown % 60).toString().padLeft(2, '0')}'
+                              : 'Request OTP',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 32),
         _buildStepButtons(isDark, () => setState(() => _stepIndex = 0), () {
@@ -473,9 +570,27 @@ class _RegisterViewState extends State<RegisterView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionLabel('Age Range: $_minAge - $_maxAge', isDark),
-        _buildSlider(_minAge.toDouble(), 18, 100, (v) => setState(() => _minAge = v.round()), isDark),
-        _buildSlider(_maxAge.toDouble(), 18, 100, (v) => setState(() => _maxAge = v.round()), isDark),
+        _buildSectionLabel('Age Range', isDark),
+        RangeSlider(
+          values: RangeValues(_minAge.toDouble(), _maxAge.toDouble()),
+          min: 18,
+          max: 100,
+          divisions: 82,
+          activeColor: const Color(0xFF10B981),
+          onChanged: (v) {
+            setState(() {
+              _minAge = v.start.round();
+              _maxAge = v.end.round();
+            });
+          },
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Min: $_minAge', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+            Text('Max: $_maxAge', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+          ],
+        ),
         const SizedBox(height: 16),
         _buildSectionLabel('Distance: $_distance km', isDark),
         _buildSlider(_distance.toDouble(), 0, 100, (v) => setState(() => _distance = v.round()), isDark),
@@ -903,104 +1018,84 @@ class _RegisterViewState extends State<RegisterView> {
   }
 
   Widget _buildStepButtons(bool isDark, VoidCallback? onBack, VoidCallback onNext) {
-    // For final step, show a more prominent Create Account button
+    // For final step, show Back and Register buttons side by side
     if (_stepIndex == 2) {
-      return Column(
+      return Row(
         children: [
           if (onBack != null) ...[
-            Container(
-              height: 50,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
-                  width: 1,
+            Expanded(
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onBack,
-                  borderRadius: BorderRadius.circular(14),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.arrow_back_ios,
-                          size: 16,
-                          color: isDark ? Colors.white70 : const Color(0xFF666666),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onBack,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Center(
+                      child: Text(
+                        'Back',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1a1a1a),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Back',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : const Color(0xFF666666),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(width: 12),
           ],
-          Container(
-            height: 60,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF059669)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
+          Expanded(
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF059669)],
                 ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _isLoading ? null : onNext,
                 borderRadius: BorderRadius.circular(16),
-                child: Center(
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(
-                              Icons.person_add_outlined,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isLoading ? null : onNext,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Center(
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Register',
+                            style: TextStyle(
                               color: Colors.white,
-                              size: 22,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Create Account',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                  ),
                 ),
               ),
             ),

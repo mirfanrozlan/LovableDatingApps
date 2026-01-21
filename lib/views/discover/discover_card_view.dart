@@ -206,7 +206,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                       Wrap(
                         spacing: 8,
                         children:
-                            ['Male', 'Female', 'Non-Binary'].map((g) {
+                            ['Male', 'Female'].map((g) {
                               final selected = gender == g;
                               return ChoiceChip(
                                 label: Text(g),
