@@ -119,11 +119,47 @@ class DiscoverController extends ChangeNotifier {
     }
   }
 
-  void like(DiscoverProfileModel p) {
+  // Callback for when a match is made (both users liked each other)
+  void Function(DiscoverProfileModel profile)? onMatch;
+
+  /// Like a profile - sends an invite or accepts a pending invite if the other user already liked us.
+  Future<void> like(DiscoverProfileModel p) async {
+    print('Discover: liking user ${p.id} (${p.name})');
+    
+    // First check if this user already sent us an invite (they liked us first)
+    final pendingInviteId = await _service.checkPendingInvite(p.id);
+    
+    if (pendingInviteId != null) {
+      // They already liked us! Accept the invite to create a match
+      print('Discover: found pending invite $pendingInviteId from user ${p.id}, accepting...');
+      final result = await _service.respondInvite(pendingInviteId, 'accepted');
+      if (result['success'] == true) {
+        print('Discover: match created with ${p.name}!');
+        // Notify about the match
+        if (onMatch != null) {
+          onMatch!(p);
+        }
+      }
+    } else {
+      // No pending invite, send one to them
+      print('Discover: sending invite to user ${p.id}...');
+      final result = await _service.sendInvite(p.id);
+      if (result['success'] == true) {
+        print('Discover: invite sent to ${p.name}');
+        // Check if the API indicates this is a match (some APIs return this directly)
+        if (result['isMatch'] == true && onMatch != null) {
+          onMatch!(p);
+        }
+      }
+    }
+    
     removeProfile(p);
   }
 
+  /// Dislike a profile - just removes from the deck without sending any invite
   void dislike(DiscoverProfileModel p) {
+    print('Discover: disliking user ${p.id} (${p.name})');
     removeProfile(p);
   }
 }
+
