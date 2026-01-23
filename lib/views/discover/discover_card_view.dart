@@ -174,11 +174,18 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
         String? gender = prefs['pref_gender']?.toString();
         int? minAge = int.tryParse(prefs['pref_age_min']?.toString() ?? '');
         int? maxAge = int.tryParse(prefs['pref_age_max']?.toString() ?? '');
+        int? maxDistance = int.tryParse(
+          prefs['pref_location']?.toString() ?? '',
+        );
+        if (maxDistance != null && maxDistance < 1) {
+          maxDistance = 100;
+        }
 
         _controller.updateFilters(
           gender: gender,
           minAge: minAge,
           maxAge: maxAge,
+          maxDistance: maxDistance,
         );
         return;
       }
@@ -274,6 +281,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     String gender = _controller.gender ?? 'male';
     int minAge = _controller.minAge ?? 18;
     int maxAge = _controller.maxAge ?? 80;
+    int maxDistance = _controller.maxDistance;
 
     final isDarkGlobal = Theme.of(context).brightness == Brightness.dark;
 
@@ -416,6 +424,42 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                           },
                         ),
                       ),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Maximum Distance', style: labelStyle),
+                          Text(
+                            '$maxDistance km',
+                            style: const TextStyle(
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFF10B981),
+                          inactiveTrackColor:
+                              isDark ? Colors.white10 : Colors.grey.shade200,
+                          thumbColor: const Color(0xFF10B981),
+                          overlayColor: const Color(
+                            0xFF10B981,
+                          ).withOpacity(0.2),
+                        ),
+                        child: Slider(
+                          value: maxDistance.toDouble(),
+                          min: 1,
+                          max: 500,
+                          divisions: 100,
+                          onChanged: (v) {
+                            setModalState(() {
+                              maxDistance = v.round();
+                            });
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 40),
                       ElevatedButton(
                         onPressed: () async {
@@ -437,6 +481,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                             prefGender: gender,
                             prefAgeMin: minAge,
                             prefAgeMax: maxAge,
+                            prefLocation: maxDistance,
                           );
                           if (mounted) {
                             Navigator.pop(context);
@@ -454,6 +499,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                                 gender: gender,
                                 minAge: minAge,
                                 maxAge: maxAge,
+                                maxDistance: maxDistance,
                               );
                             }
                           }
@@ -964,7 +1010,9 @@ class _SingleCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (p.city.isNotEmpty || p.country.isNotEmpty)
+                  if (p.city.isNotEmpty ||
+                      p.country.isNotEmpty ||
+                      p.distance > 0)
                     Row(
                       children: [
                         const Icon(
@@ -975,7 +1023,7 @@ class _SingleCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            '${p.city}, ${p.country}',
+                            '${p.city}, ${p.country}${p.distance > 0 ? " • ${p.distance.toStringAsFixed(0)} km" : ""}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 15,

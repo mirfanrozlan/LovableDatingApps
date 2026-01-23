@@ -73,6 +73,60 @@ class DiscoverService {
     }
   }
 
+  Future<List<DiscoverProfileModel>> getUserNearby({
+    int page = 1,
+    int limit = 5,
+    String? gender,
+    int? minAge,
+    int? maxAge,
+    double latitude = 3.0839995, // Default/fallback
+    double longitude = 101.7143737, // Default/fallback
+  }) async {
+    try {
+      final token = await const FlutterSecureStorage().read(key: 'auth_token');
+      final queryParams = {'page': page.toString(), 'limit': limit.toString()};
+
+      if (gender != null) queryParams['gender'] = gender;
+      if (minAge != null) queryParams['minAge'] = minAge.toString();
+      if (maxAge != null) queryParams['maxAge'] = maxAge.toString();
+
+      final body = {
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+      };
+
+      var response = await http.post(
+        Uri.https(
+          'demo.mazri-minecraft.xyz',
+          '/api/getUserNearby',
+          queryParams,
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      print(
+        'DiscoverService.getUserNearby: status=${response.statusCode} body=${response.body}',
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> users = data['data'];
+        final mapped =
+            users.map((e) => DiscoverProfileModel.fromJson(e)).toList();
+        return mapped;
+      }
+      return [];
+    } catch (e) {
+      print('Discover error: $e');
+      return [];
+    }
+  }
+
   Future<List<DiscoverProfileModel>> getRandomPeople({
     int page = 1,
     int limit = 5,

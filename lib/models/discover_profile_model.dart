@@ -14,6 +14,7 @@ class DiscoverProfileModel {
   final String country;
   final double latitude;
   final double longitude;
+  final double distance;
 
   DiscoverProfileModel({
     required this.id,
@@ -31,6 +32,7 @@ class DiscoverProfileModel {
     required this.country,
     required this.latitude,
     required this.longitude,
+    this.distance = 0.0,
   });
 
   factory DiscoverProfileModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class DiscoverProfileModel {
       country: json['user_country'] ?? '',
       latitude: double.tryParse(json['user_latitude']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['user_longitude']?.toString() ?? '0') ?? 0.0,
+      distance: double.tryParse(json['distance']?.toString() ?? '0') ?? 0.0,
     );
   }
 }

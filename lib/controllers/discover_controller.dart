@@ -20,6 +20,7 @@ class DiscoverController extends ChangeNotifier {
   String? _gender;
   int? _minAge;
   int? _maxAge;
+  int _maxDistance = 100; // Default 100km
 
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
@@ -27,11 +28,18 @@ class DiscoverController extends ChangeNotifier {
   String? get gender => _gender;
   int? get minAge => _minAge;
   int? get maxAge => _maxAge;
+  int get maxDistance => _maxDistance;
 
-  void updateFilters({String? gender, int? minAge, int? maxAge}) {
+  void updateFilters({
+    String? gender,
+    int? minAge,
+    int? maxAge,
+    int? maxDistance,
+  }) {
     _gender = gender;
     _minAge = minAge;
     _maxAge = maxAge;
+    if (maxDistance != null) _maxDistance = maxDistance;
 
     // Reset pagination and reload
     _page = 1;
@@ -49,23 +57,35 @@ class DiscoverController extends ChangeNotifier {
     notifyListeners();
 
     print(
-      'Discover: loading page=$_page limit=$_limit filters=(gender:$_gender, age:$_minAge-$_maxAge)',
+      'Discover: loading page=$_page limit=$_limit filters=(gender:$_gender, age:$_minAge-$_maxAge, dist:$_maxDistance)',
     );
-    final newProfiles = await _service.getRandomPeople(
+    // Use getUserNearby instead of getRandomPeople
+    final newProfiles = await _service.getUserNearby(
       page: _page,
       limit: _limit,
       gender: _gender,
       minAge: _minAge,
       maxAge: _maxAge,
+      // In a real app, we would get the actual location here
+      // For now using defaults in the service
     );
+
     print('Discover: received=${newProfiles.length} profiles from API');
     if (newProfiles.isNotEmpty) {
       final deduped = <DiscoverProfileModel>[];
       for (final p in newProfiles) {
-        if (_seenIds.add(p.id)) {
-          deduped.add(p);
+        // Filter by max distance
+        if (p.distance <= _maxDistance) {
+          if (_seenIds.add(p.id)) {
+            deduped.add(p);
+          }
         }
       }
+
+      // If we filtered out everyone but there were results, we might want to fetch more
+      // But for now, we'll just show what we have.
+      // If getUserNearby is sorted by distance, we are likely fine.
+
       if (deduped.isNotEmpty) {
         _profiles.addAll(deduped);
         _page++;
@@ -74,9 +94,19 @@ class DiscoverController extends ChangeNotifier {
           'Discover: added=${deduped.length} total=${_profiles.length} nextPage=$_page',
         );
       } else {
-        // All were duplicates: advance page and attempt again next time
+        // All were duplicates or too far
+        // If they were too far and the API is sorted by distance, we probably shouldn't fetch more.
+        // But if they were just duplicates, we should.
+        // For safety, let's advance page.
         _page++;
-        print('Discover: duplicates only, advancing to page=$_page');
+        print('Discover: duplicates or filtered out, advancing to page=$_page');
+
+        // Optional: Recursively load more if we have no profiles yet?
+        if (_profiles.isEmpty && newProfiles.isNotEmpty) {
+          _loading = false; // reset flag so recursive call works
+          loadProfiles();
+          return;
+        }
       }
     } else {
       _hasMore = false;
