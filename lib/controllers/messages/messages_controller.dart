@@ -40,7 +40,9 @@ class MessagesController extends ChangeNotifier {
     try {
       final invites = await _service.getInvites();
       _chats =
-          invites.map((invite) {
+          invites
+              .where((invite) => invite.friendStatus == 'accepted')
+              .map((invite) {
             // Map invite to ChatSummaryModel
             // Since we don't have message history yet, we show placeholder
             return ChatSummaryModel(
