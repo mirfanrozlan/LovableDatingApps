@@ -95,10 +95,10 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
           SnackBar(
             content: Text(
               response == 'accepted'
-                  ? 'Match Accepted!'
+                  ? 'Friend Accepted!'
                   : response == 'blocked'
                   ? 'User Blocked'
-                  : 'Match Rejected',
+                  : 'Friend Rejected',
             ),
             backgroundColor:
                 response == 'accepted'

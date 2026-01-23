@@ -45,6 +45,8 @@ Future<void> _handleIncomingCallMessage(Map<String, dynamic> data) async {
       final callerName =
           data['caller_name']?.toString() ??
           data['callerName']?.toString() ??
+          data['sender_name']?.toString() ??
+          data['name']?.toString() ??
           'Unknown';
       final callerId =
           data['caller_id']?.toString() ?? data['callerId']?.toString() ?? '';
@@ -221,7 +223,8 @@ class LoveConnectApp extends StatefulWidget {
   State<LoveConnectApp> createState() => _LoveConnectAppState();
 }
 
-class _LoveConnectAppState extends State<LoveConnectApp> with WidgetsBindingObserver {
+class _LoveConnectAppState extends State<LoveConnectApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -245,32 +248,40 @@ class _LoveConnectAppState extends State<LoveConnectApp> with WidgetsBindingObse
     final controller = IncomingCallController.instance;
     if (controller.activeCallRoomId != null) {
       if (kDebugMode) {
-        print('[LoveConnectApp] App resumed. Active call: ${controller.activeCallRoomId}');
+        print(
+          '[LoveConnectApp] App resumed. Active call: ${controller.activeCallRoomId}',
+        );
       }
-      
+
       final current = appRouteObserver.currentRoute;
       if (current != AppRoutes.call && current != AppRoutes.videoCall) {
-         if (kDebugMode) {
-           print('[LoveConnectApp] Restoring call view. Current: $current');
-         }
-         final nav = appNavigatorKey.currentState;
-         if (nav != null) {
-           if (controller.activeCallIsVideo) {
-             nav.pushNamed(
-               AppRoutes.videoCall,
-               arguments: {'roomId': controller.activeCallRoomId, 'isIncoming': true},
-             );
-           } else {
-             nav.pushNamed(
-               AppRoutes.call,
-               arguments: {'roomId': controller.activeCallRoomId, 'isIncoming': true},
-             );
-           }
-         }
+        if (kDebugMode) {
+          print('[LoveConnectApp] Restoring call view. Current: $current');
+        }
+        final nav = appNavigatorKey.currentState;
+        if (nav != null) {
+          if (controller.activeCallIsVideo) {
+            nav.pushNamed(
+              AppRoutes.videoCall,
+              arguments: {
+                'roomId': controller.activeCallRoomId,
+                'isIncoming': true,
+              },
+            );
+          } else {
+            nav.pushNamed(
+              AppRoutes.call,
+              arguments: {
+                'roomId': controller.activeCallRoomId,
+                'isIncoming': true,
+              },
+            );
+          }
+        }
       } else {
-         if (kDebugMode) {
-           print('[LoveConnectApp] Already on call view');
-         }
+        if (kDebugMode) {
+          print('[LoveConnectApp] Already on call view');
+        }
       }
     }
   }
