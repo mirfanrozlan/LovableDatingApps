@@ -638,51 +638,25 @@ class _MatchCard extends StatelessWidget {
                   ),
                 )
               else
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Block Button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onBlock,
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.block_rounded,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                        ),
+                // Block Button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onBlock,
+                    borderRadius: BorderRadius.circular(50),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.block_rounded,
+                        color: Colors.red,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // Chat Button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onChat,
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chat_bubble_rounded,
-                            color: Color(0xFF10B981),
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
             ],
           ),
