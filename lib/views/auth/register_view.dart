@@ -76,9 +76,10 @@ class _RegisterViewState extends State<RegisterView> {
       _selectedState = state;
       _selectedCity = null;
       _selectedPostcode = null;
-      _cityList = state != null 
-          ? MalaysiaPostcodeService.instance.getCitiesForState(state)
-          : [];
+      _cityList =
+          state != null
+              ? MalaysiaPostcodeService.instance.getCitiesForState(state)
+              : [];
       _postcodeList = [];
     });
   }
@@ -87,9 +88,13 @@ class _RegisterViewState extends State<RegisterView> {
     setState(() {
       _selectedCity = city;
       _selectedPostcode = null;
-      _postcodeList = (_selectedState != null && city != null)
-          ? MalaysiaPostcodeService.instance.getPostcodesForCity(_selectedState!, city)
-          : [];
+      _postcodeList =
+          (_selectedState != null && city != null)
+              ? MalaysiaPostcodeService.instance.getPostcodesForCity(
+                _selectedState!,
+                city,
+              )
+              : [];
     });
   }
 
@@ -115,27 +120,21 @@ class _RegisterViewState extends State<RegisterView> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return AppScaffold(
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF1a1a1a),
-                    const Color(0xFF0a0a0a),
-                  ]
-                : [
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFFDCFCE7),
-                  ],
+            colors:
+                isDark
+                    ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
+                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
           ),
         ),
         child: SafeArea(
@@ -189,10 +188,7 @@ class _RegisterViewState extends State<RegisterView> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF10B981),
-                Color(0xFF059669),
-              ],
+              colors: [Color(0xFF10B981), Color(0xFF059669)],
             ),
             boxShadow: [
               BoxShadow(
@@ -202,11 +198,7 @@ class _RegisterViewState extends State<RegisterView> {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.favorite,
-            size: 48,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.favorite, size: 48, color: Colors.white),
         ),
         const SizedBox(height: 32),
         Text(
@@ -226,9 +218,10 @@ class _RegisterViewState extends State<RegisterView> {
             fontSize: 12,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.5,
-            color: isDark 
-                ? Colors.white.withOpacity(0.6)
-                : const Color(0xFF10B981),
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.6)
+                    : const Color(0xFF10B981),
           ),
         ),
       ],
@@ -279,9 +272,12 @@ class _RegisterViewState extends State<RegisterView> {
                 height: 4,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(2),
-                  color: isActive
-                      ? const Color(0xFF10B981)
-                      : (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE)),
+                  color:
+                      isActive
+                          ? const Color(0xFF10B981)
+                          : (isDark
+                              ? const Color(0xFF3A3A3A)
+                              : const Color(0xFFEEEEEE)),
                 ),
               ),
             );
@@ -296,9 +292,10 @@ class _RegisterViewState extends State<RegisterView> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: _stepIndex == 0 ? FontWeight.bold : FontWeight.w500,
-                color: _stepIndex >= 0
-                    ? const Color(0xFF10B981)
-                    : (isDark ? Colors.white38 : const Color(0xFF999999)),
+                color:
+                    _stepIndex >= 0
+                        ? const Color(0xFF10B981)
+                        : (isDark ? Colors.white38 : const Color(0xFF999999)),
               ),
             ),
             Text(
@@ -306,9 +303,10 @@ class _RegisterViewState extends State<RegisterView> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: _stepIndex == 1 ? FontWeight.bold : FontWeight.w500,
-                color: _stepIndex >= 1
-                    ? const Color(0xFF10B981)
-                    : (isDark ? Colors.white38 : const Color(0xFF999999)),
+                color:
+                    _stepIndex >= 1
+                        ? const Color(0xFF10B981)
+                        : (isDark ? Colors.white38 : const Color(0xFF999999)),
               ),
             ),
             Text(
@@ -316,9 +314,10 @@ class _RegisterViewState extends State<RegisterView> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: _stepIndex == 2 ? FontWeight.bold : FontWeight.w500,
-                color: _stepIndex >= 2
-                    ? const Color(0xFF10B981)
-                    : (isDark ? Colors.white38 : const Color(0xFF999999)),
+                color:
+                    _stepIndex >= 2
+                        ? const Color(0xFF10B981)
+                        : (isDark ? Colors.white38 : const Color(0xFF999999)),
               ),
             ),
           ],
@@ -346,8 +345,13 @@ class _RegisterViewState extends State<RegisterView> {
           obscure: !_showPassword,
           suffix: IconButton(
             icon: Icon(
-              _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+              _showPassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color:
+                  isDark
+                      ? Colors.white.withOpacity(0.5)
+                      : const Color(0xFF999999),
             ),
             onPressed: () => setState(() => _showPassword = !_showPassword),
           ),
@@ -363,7 +367,11 @@ class _RegisterViewState extends State<RegisterView> {
         const SizedBox(height: 24),
         _buildSectionLabel('Gender', isDark),
         const SizedBox(height: 12),
-        _buildGenderSelector(isDark, _gender, (v) => setState(() => _gender = v)),
+        _buildGenderSelector(
+          isDark,
+          _gender,
+          (v) => setState(() => _gender = v),
+        ),
         const SizedBox(height: 24),
         _buildSectionLabel('Birth Date', isDark),
         const SizedBox(height: 12),
@@ -475,7 +483,10 @@ class _RegisterViewState extends State<RegisterView> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Icon(
                   Icons.security,
-                  color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                  color:
+                      isDark
+                          ? Colors.white.withOpacity(0.5)
+                          : const Color(0xFF999999),
                   size: 22,
                 ),
               ),
@@ -489,7 +500,10 @@ class _RegisterViewState extends State<RegisterView> {
                   decoration: InputDecoration(
                     hintText: 'OTP',
                     hintStyle: TextStyle(
-                      color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
+                      color:
+                          isDark
+                              ? Colors.white.withOpacity(0.3)
+                              : const Color(0xFFCCCCCC),
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
@@ -500,40 +514,48 @@ class _RegisterViewState extends State<RegisterView> {
                 height: 40,
                 margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
-                  gradient: _otpCountdown > 0
-                      ? LinearGradient(
-                          colors: [Colors.grey.shade400, Colors.grey.shade500],
-                        )
-                      : const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        ),
+                  gradient:
+                      _otpCountdown > 0
+                          ? LinearGradient(
+                            colors: [
+                              Colors.grey.shade400,
+                              Colors.grey.shade500,
+                            ],
+                          )
+                          : const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                          ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: _otpCountdown > 0
-                        ? null
-                        : () {
-                            // TODO: Implement OTP request logic
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('OTP requested')),
-                            );
-                            // Start 2-minute countdown
-                            setState(() {
-                              _otpCountdown = 120; // 2 minutes in seconds
-                            });
-                            _otpTimer?.cancel();
-                            _otpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-                              if (_otpCountdown > 0) {
-                                setState(() {
-                                  _otpCountdown--;
-                                });
-                              } else {
-                                timer.cancel();
-                              }
-                            });
-                          },
+                    onTap:
+                        _otpCountdown > 0
+                            ? null
+                            : () {
+                              // TODO: Implement OTP request logic
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('OTP requested')),
+                              );
+                              // Start 2-minute countdown
+                              setState(() {
+                                _otpCountdown = 120; // 2 minutes in seconds
+                              });
+                              _otpTimer?.cancel();
+                              _otpTimer = Timer.periodic(
+                                const Duration(seconds: 1),
+                                (timer) {
+                                  if (_otpCountdown > 0) {
+                                    setState(() {
+                                      _otpCountdown--;
+                                    });
+                                  } else {
+                                    timer.cancel();
+                                  }
+                                },
+                              );
+                            },
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -587,21 +609,41 @@ class _RegisterViewState extends State<RegisterView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Min: $_minAge', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
-            Text('Max: $_maxAge', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+            Text(
+              'Min: $_minAge',
+              style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+            ),
+            Text(
+              'Max: $_maxAge',
+              style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+            ),
           ],
         ),
         const SizedBox(height: 16),
         _buildSectionLabel('Distance: $_distance km', isDark),
-        _buildSlider(_distance.toDouble(), 0, 100, (v) => setState(() => _distance = v.round()), isDark),
+        _buildSlider(
+          _distance.toDouble(),
+          0,
+          100,
+          (v) => setState(() => _distance = v.round()),
+          isDark,
+        ),
         const SizedBox(height: 24),
         _buildSectionLabel('Attracted To', isDark),
         const SizedBox(height: 12),
-        _buildGenderSelector(isDark, _attractedGender, (v) => setState(() => _attractedGender = v)),
+        _buildGenderSelector(
+          isDark,
+          _attractedGender,
+          (v) => setState(() => _attractedGender = v),
+        ),
         const SizedBox(height: 24),
         _buildPhotoUpload(isDark),
         const SizedBox(height: 32),
-        _buildStepButtons(isDark, () => setState(() => _stepIndex = 1), _submitForm),
+        _buildStepButtons(
+          isDark,
+          () => setState(() => _stepIndex = 1),
+          _submitForm,
+        ),
       ],
     );
   }
@@ -630,7 +672,10 @@ class _RegisterViewState extends State<RegisterView> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Icon(
               icon,
-              color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+              color:
+                  isDark
+                      ? Colors.white.withOpacity(0.5)
+                      : const Color(0xFF999999),
               size: 22,
             ),
           ),
@@ -645,7 +690,10 @@ class _RegisterViewState extends State<RegisterView> {
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: TextStyle(
-                  color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
+                  color:
+                      isDark
+                          ? Colors.white.withOpacity(0.3)
+                          : const Color(0xFFCCCCCC),
                 ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
@@ -696,48 +744,64 @@ class _RegisterViewState extends State<RegisterView> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Icon(
               icon,
-              color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+              color:
+                  isDark
+                      ? Colors.white.withOpacity(0.5)
+                      : const Color(0xFF999999),
               size: 22,
             ),
           ),
           Expanded(
-            child: isLoading
-                ? Text(
-                    'Loading...',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
-                    ),
-                  )
-                : DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: value,
-                      hint: Text(
-                        hint,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC),
-                        ),
-                      ),
-                      isExpanded: true,
-                      icon: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
-                      ),
-                      dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+            child:
+                isLoading
+                    ? Text(
+                      'Loading...',
                       style: TextStyle(
                         fontSize: 15,
-                        color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+                        color:
+                            isDark
+                                ? Colors.white.withOpacity(0.3)
+                                : const Color(0xFFCCCCCC),
                       ),
-                      onChanged: enabled ? onChanged : null,
-                      items: items.map((item) {
-                        return DropdownMenuItem<String>(
-                          value: item,
-                          child: Text(item),
-                        );
-                      }).toList(),
+                    )
+                    : DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: value,
+                        hint: Text(
+                          hint,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color:
+                                isDark
+                                    ? Colors.white.withOpacity(0.3)
+                                    : const Color(0xFFCCCCCC),
+                          ),
+                        ),
+                        isExpanded: true,
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color:
+                              isDark
+                                  ? Colors.white.withOpacity(0.5)
+                                  : const Color(0xFF999999),
+                        ),
+                        dropdownColor:
+                            isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1a1a1a),
+                        ),
+                        onChanged: enabled ? onChanged : null,
+                        items:
+                            items.map((item) {
+                              return DropdownMenuItem<String>(
+                                value: item,
+                                child: Text(item),
+                              );
+                            }).toList(),
+                      ),
                     ),
-                  ),
           ),
           const SizedBox(width: 16),
         ],
@@ -745,65 +809,85 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Widget _buildGenderSelector(bool isDark, String value, Function(String) onChanged) {
+  Widget _buildGenderSelector(
+    bool isDark,
+    String value,
+    Function(String) onChanged,
+  ) {
     final genders = [
       {'label': 'Male', 'icon': Icons.male},
       {'label': 'Female', 'icon': Icons.female},
     ];
-    
+
     return Row(
-      children: genders.map((gender) {
-        final isSelected = value == gender['label'];
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: gender['label'] == 'Male' ? 8 : 0,
-              left: gender['label'] == 'Female' ? 8 : 0,
-            ),
-            child: GestureDetector(
-              onTap: () => onChanged(gender['label'] as String),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF10B981)
-                      : (isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8)),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF10B981)
-                        : (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE)),
-                    width: 1,
-                  ),
+      children:
+          genders.map((gender) {
+            final isSelected = value == gender['label'];
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: gender['label'] == 'Male' ? 8 : 0,
+                  left: gender['label'] == 'Female' ? 8 : 0,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      gender['icon'] as IconData,
-                      size: 24,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.white70 : const Color(0xFF666666)),
+                child: GestureDetector(
+                  onTap: () => onChanged(gender['label'] as String),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      gender['label'] as String,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white70 : const Color(0xFF666666)),
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected
+                              ? const Color(0xFF10B981)
+                              : (isDark
+                                  ? const Color(0xFF2A2A2A)
+                                  : const Color(0xFFF8F8F8)),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color:
+                            isSelected
+                                ? const Color(0xFF10B981)
+                                : (isDark
+                                    ? const Color(0xFF3A3A3A)
+                                    : const Color(0xFFEEEEEE)),
+                        width: 1,
                       ),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          gender['icon'] as IconData,
+                          size: 24,
+                          color:
+                              isSelected
+                                  ? Colors.white
+                                  : (isDark
+                                      ? Colors.white70
+                                      : const Color(0xFF666666)),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          gender['label'] as String,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color:
+                                isSelected
+                                    ? Colors.white
+                                    : (isDark
+                                        ? Colors.white70
+                                        : const Color(0xFF666666)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -811,15 +895,20 @@ class _RegisterViewState extends State<RegisterView> {
     final now = DateTime.now();
     final minDate = DateTime(now.year - 100, now.month, now.day);
     final maxDate = DateTime(now.year - 18, now.month, now.day);
-    
+
     String displayText = 'Select your birth date';
     if (_birthDate != null) {
-      final age = now.year - _birthDate!.year - 
-          (now.month < _birthDate!.month || 
-           (now.month == _birthDate!.month && now.day < _birthDate!.day) ? 1 : 0);
-      displayText = '${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year} (Age: $age)';
+      final age =
+          now.year -
+          _birthDate!.year -
+          (now.month < _birthDate!.month ||
+                  (now.month == _birthDate!.month && now.day < _birthDate!.day)
+              ? 1
+              : 0);
+      displayText =
+          '${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year} (Age: $age)';
     }
-    
+
     return GestureDetector(
       onTap: () async {
         final picked = await showDatePicker(
@@ -836,7 +925,8 @@ class _RegisterViewState extends State<RegisterView> {
                   surface: isDark ? const Color(0xFF1F1F1F) : Colors.white,
                   onSurface: isDark ? Colors.white : const Color(0xFF1a1a1a),
                 ),
-                dialogBackgroundColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                dialogBackgroundColor:
+                    isDark ? const Color(0xFF1F1F1F) : Colors.white,
               ),
               child: child!,
             );
@@ -862,7 +952,10 @@ class _RegisterViewState extends State<RegisterView> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Icon(
                 Icons.cake_outlined,
-                color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                color:
+                    isDark
+                        ? Colors.white.withOpacity(0.5)
+                        : const Color(0xFF999999),
                 size: 22,
               ),
             ),
@@ -871,9 +964,12 @@ class _RegisterViewState extends State<RegisterView> {
                 displayText,
                 style: TextStyle(
                   fontSize: 15,
-                  color: _birthDate != null
-                      ? (isDark ? Colors.white : const Color(0xFF1a1a1a))
-                      : (isDark ? Colors.white.withOpacity(0.3) : const Color(0xFFCCCCCC)),
+                  color:
+                      _birthDate != null
+                          ? (isDark ? Colors.white : const Color(0xFF1a1a1a))
+                          : (isDark
+                              ? Colors.white.withOpacity(0.3)
+                              : const Color(0xFFCCCCCC)),
                 ),
               ),
             ),
@@ -881,7 +977,10 @@ class _RegisterViewState extends State<RegisterView> {
               padding: const EdgeInsets.only(right: 16),
               child: Icon(
                 Icons.calendar_today_outlined,
-                color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                color:
+                    isDark
+                        ? Colors.white.withOpacity(0.5)
+                        : const Color(0xFF999999),
                 size: 20,
               ),
             ),
@@ -891,11 +990,18 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Widget _buildSlider(double value, double min, double max, Function(double) onChanged, bool isDark) {
+  Widget _buildSlider(
+    double value,
+    double min,
+    double max,
+    Function(double) onChanged,
+    bool isDark,
+  ) {
     return SliderTheme(
       data: SliderThemeData(
         activeTrackColor: const Color(0xFF10B981),
-        inactiveTrackColor: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+        inactiveTrackColor:
+            isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
         thumbColor: const Color(0xFF10B981),
         overlayColor: const Color(0xFF10B981).withOpacity(0.2),
       ),
@@ -945,44 +1051,71 @@ class _RegisterViewState extends State<RegisterView> {
               onTap: () async {
                 final source = await showModalBottomSheet<ImageSource>(
                   context: context,
-                  backgroundColor: isDark ? const Color(0xFF1F1F1F) : Colors.white,
+                  backgroundColor:
+                      isDark ? const Color(0xFF1F1F1F) : Colors.white,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  builder: (_) => SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.photo_library, color: Color(0xFF10B981)),
-                            title: Text(
-                              'Pick from Gallery',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF1a1a1a),
-                              ),
-                            ),
-                            onTap: () => Navigator.pop(context, ImageSource.gallery),
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.photo_camera, color: Color(0xFF10B981)),
-                            title: Text(
-                              'Take Photo',
-                              style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF1a1a1a),
-                              ),
-                            ),
-                            onTap: () => Navigator.pop(context, ImageSource.camera),
-                          ),
-                        ],
-                      ),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
                     ),
                   ),
+                  builder:
+                      (_) => SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.photo_library,
+                                  color: Color(0xFF10B981),
+                                ),
+                                title: Text(
+                                  'Pick from Gallery',
+                                  style: TextStyle(
+                                    color:
+                                        isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1a1a1a),
+                                  ),
+                                ),
+                                onTap:
+                                    () => Navigator.pop(
+                                      context,
+                                      ImageSource.gallery,
+                                    ),
+                              ),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.photo_camera,
+                                  color: Color(0xFF10B981),
+                                ),
+                                title: Text(
+                                  'Take Photo',
+                                  style: TextStyle(
+                                    color:
+                                        isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1a1a1a),
+                                  ),
+                                ),
+                                onTap:
+                                    () => Navigator.pop(
+                                      context,
+                                      ImageSource.camera,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                 );
                 if (source == null) return;
                 final picker = ImagePicker();
-                final picked = await picker.pickImage(source: source, maxWidth: 1080);
+                final picked = await picker.pickImage(
+                  source: source,
+                  maxWidth: 1080,
+                );
                 if (picked != null) {
                   setState(() {
                     _photo = picked;
@@ -997,14 +1130,21 @@ class _RegisterViewState extends State<RegisterView> {
                   children: [
                     Icon(
                       Icons.add_photo_alternate_outlined,
-                      color: isDark ? Colors.white.withOpacity(0.5) : const Color(0xFF999999),
+                      color:
+                          isDark
+                              ? Colors.white.withOpacity(0.5)
+                              : const Color(0xFF999999),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      _photoName.isEmpty ? 'Choose Photo' : _photoName,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: isDark ? Colors.white70 : const Color(0xFF666666),
+                    Flexible(
+                      child: Text(
+                        _photo == null ? 'Choose Photo' : 'Change Photo',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color:
+                              isDark ? Colors.white70 : const Color(0xFF666666),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1017,7 +1157,11 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Widget _buildStepButtons(bool isDark, VoidCallback? onBack, VoidCallback onNext) {
+  Widget _buildStepButtons(
+    bool isDark,
+    VoidCallback? onBack,
+    VoidCallback onNext,
+  ) {
     // For final step, show Back and Register buttons side by side
     if (_stepIndex == 2) {
       return Row(
@@ -1027,10 +1171,16 @@ class _RegisterViewState extends State<RegisterView> {
               child: Container(
                 height: 56,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
+                  color:
+                      isDark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+                    color:
+                        isDark
+                            ? const Color(0xFF3A3A3A)
+                            : const Color(0xFFEEEEEE),
                     width: 1,
                   ),
                 ),
@@ -1045,7 +1195,8 @@ class _RegisterViewState extends State<RegisterView> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF1a1a1a),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1a1a1a),
                         ),
                       ),
                     ),
@@ -1077,24 +1228,27 @@ class _RegisterViewState extends State<RegisterView> {
                   onTap: _isLoading ? null : onNext,
                   borderRadius: BorderRadius.circular(16),
                   child: Center(
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    child:
+                        _isLoading
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                            : const Text(
+                              'Register',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          )
-                        : const Text(
-                            'Register',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
                   ),
                 ),
               ),
@@ -1112,10 +1266,14 @@ class _RegisterViewState extends State<RegisterView> {
             child: Container(
               height: 56,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
+                color:
+                    isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F8F8),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFEEEEEE),
+                  color:
+                      isDark
+                          ? const Color(0xFF3A3A3A)
+                          : const Color(0xFFEEEEEE),
                   width: 1,
                 ),
               ),

@@ -42,7 +42,7 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
       child: Container(
@@ -50,16 +50,14 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    const Color(0xFF0F1512),
-                    const Color(0xFF0A0F0D),
-                  ]
-                : [
-                    const Color(0xFFF0FDF8),
-                    const Color(0xFFECFDF5),
-                    const Color(0xFFD1FAE5),
-                  ],
+            colors:
+                isDark
+                    ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
+                    : [
+                      const Color(0xFFF0FDF8),
+                      const Color(0xFFECFDF5),
+                      const Color(0xFFD1FAE5),
+                    ],
             stops: isDark ? null : const [0.0, 0.5, 1.0],
           ),
         ),
@@ -125,7 +123,10 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                           Text(
                             'Loading your profile...',
                             style: TextStyle(
-                              color: isDark ? Colors.white60 : Colors.grey.shade600,
+                              color:
+                                  isDark
+                                      ? Colors.white60
+                                      : Colors.grey.shade600,
                             ),
                           ),
                         ],
@@ -185,7 +186,8 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                   return RefreshIndicator(
                     onRefresh: _controller.refresh,
                     color: const Color(0xFF10B981),
-                    backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                    backgroundColor:
+                        isDark ? const Color(0xFF1E1E1E) : Colors.white,
                     child: CustomScrollView(
                       slivers: [
                         // Custom App Bar
@@ -202,7 +204,10 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                     style: TextStyle(
                                       fontSize: 26,
                                       fontWeight: FontWeight.w800,
-                                      color: isDark ? Colors.white : const Color(0xFF064E3B),
+                                      color:
+                                          isDark
+                                              ? Colors.white
+                                              : const Color(0xFF064E3B),
                                       letterSpacing: -0.5,
                                     ),
                                   ),
@@ -210,13 +215,16 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                     alignment: Alignment.centerRight,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: isDark 
-                                            ? Colors.white.withOpacity(0.08)
-                                            : Colors.white.withOpacity(0.8),
+                                        color:
+                                            isDark
+                                                ? Colors.white.withOpacity(0.08)
+                                                : Colors.white.withOpacity(0.8),
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.05),
+                                            color: Colors.black.withOpacity(
+                                              0.05,
+                                            ),
                                             blurRadius: 8,
                                             offset: const Offset(0, 2),
                                           ),
@@ -225,13 +233,18 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                       child: IconButton(
                                         icon: Icon(
                                           Icons.settings_outlined,
-                                          color: isDark ? Colors.white70 : Colors.grey.shade700,
+                                          color:
+                                              isDark
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade700,
                                         ),
                                         onPressed: () {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) => const SettingsView(),
+                                              builder:
+                                                  (context) =>
+                                                      const SettingsView(),
                                             ),
                                           );
                                         },
@@ -243,7 +256,7 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                             ),
                           ),
                         ),
-                        
+
                         // Profile Header
                         if (_controller.userProfile != null)
                           SliverToBoxAdapter(
@@ -253,10 +266,12 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                 position: Tween<Offset>(
                                   begin: const Offset(0, 0.1),
                                   end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: _animController,
-                                  curve: Curves.easeOut,
-                                )),
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: _animController,
+                                    curve: Curves.easeOut,
+                                  ),
+                                ),
                                 child: _ProfileHeader(
                                   user: _controller.userProfile!,
                                   postsCount: _controller.moments.length,
@@ -273,7 +288,9 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const EditProfileView(),
+                                        builder:
+                                            (context) =>
+                                                const EditProfileView(),
                                       ),
                                     );
                                   },
@@ -282,7 +299,7 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                               ),
                             ),
                           ),
-                        
+
                         // Posts section header
                         if (_controller.moments.isNotEmpty)
                           SliverToBoxAdapter(
@@ -295,7 +312,10 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: isDark ? Colors.white : Colors.black87,
+                                      color:
+                                          isDark
+                                              ? Colors.white
+                                              : Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -305,7 +325,9 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF10B981).withOpacity(0.15),
+                                      color: const Color(
+                                        0xFF10B981,
+                                      ).withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -321,57 +343,69 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                               ),
                             ),
                           ),
-                        
+
                         // Empty state
                         if (_controller.moments.isEmpty)
                           SliverFillRemaining(
+                            hasScrollBody: false,
                             child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(40),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(24),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            const Color(0xFF10B981).withOpacity(0.15),
-                                            const Color(0xFF34D399).withOpacity(0.1),
-                                          ],
+                              child: SingleChildScrollView(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(40),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(24),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              const Color(
+                                                0xFF10B981,
+                                              ).withOpacity(0.15),
+                                              const Color(
+                                                0xFF34D399,
+                                              ).withOpacity(0.1),
+                                            ],
+                                          ),
+                                          shape: BoxShape.circle,
                                         ),
-                                        shape: BoxShape.circle,
+                                        child: Icon(
+                                          Icons.photo_library_outlined,
+                                          size: 48,
+                                          color: const Color(
+                                            0xFF10B981,
+                                          ).withOpacity(0.7),
+                                        ),
                                       ),
-                                      child: Icon(
-                                        Icons.photo_library_outlined,
-                                        size: 48,
-                                        color: const Color(0xFF10B981).withOpacity(0.7),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        'No moments yet',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              isDark
+                                                  ? Colors.white
+                                                  : Colors.black87,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    Text(
-                                      'No moments yet',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark ? Colors.white : Colors.black87,
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Share your first moment with the world!',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 14,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Share your first moment with the world!',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        
+
                         // Moments list
                         if (_controller.moments.isNotEmpty)
                           SliverPadding(
@@ -379,13 +413,19 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                             sliver: SliverToBoxAdapter(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                                  color:
+                                      isDark
+                                          ? const Color(0xFF1E1E1E)
+                                          : Colors.white,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: isDark 
-                                          ? Colors.black.withOpacity(0.2)
-                                          : const Color(0xFF10B981).withOpacity(0.05),
+                                      color:
+                                          isDark
+                                              ? Colors.black.withOpacity(0.2)
+                                              : const Color(
+                                                0xFF10B981,
+                                              ).withOpacity(0.05),
                                       blurRadius: 15,
                                       offset: const Offset(0, 4),
                                     ),
@@ -393,65 +433,78 @@ class _MeViewState extends State<MeView> with SingleTickerProviderStateMixin {
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: Column(
-                                  children: List.generate(_controller.moments.length, (index) {
-                                    final moment = _controller.moments[index];
-                                    final isLast = index == _controller.moments.length - 1;
-                                    
-                                    return Column(
-                                      children: [
-                                        MomentCard(
-                                          post: moment,
-                                          onLike:
-                                              () => _controller.likePost(
-                                                moment.postId,
-                                                moment.userId,
-                                              ),
-                                          onLoadComments:
-                                              () =>
-                                                  _controller.loadComments(moment.postId),
-                                          onAddComment:
-                                              (content, {parentId, replyId}) =>
-                                                  _controller.addComment(
-                                                    moment.postId,
-                                                    content,
-                                                    parentId: parentId,
-                                                    replyId: replyId,
-                                                  ),
-                                          onLikeComment:
-                                              (id, {publishId}) =>
-                                                  _controller.likeComment(id, publishId),
-                                          onDeleteComment:
-                                              (id) => _controller.deleteComment(
-                                                id,
-                                                moment.postId,
-                                              ),
-                                          onDeletePost:
-                                              (postId) => _controller.deletePost(postId),
-                                          currentUserId: _controller.currentUserId,
-                                          controller: _controller,
-                                          flat: true,
-                                          showDecoration: false,
-                                        ),
-                                        if (!isLast)
-                                          Divider(
-                                            height: 1,
-                                            thickness: 1,
-                                            color: isDark 
-                                                ? Colors.white.withOpacity(0.06)
-                                                : Colors.grey.shade100,
+                                  children: List.generate(
+                                    _controller.moments.length,
+                                    (index) {
+                                      final moment = _controller.moments[index];
+                                      final isLast =
+                                          index ==
+                                          _controller.moments.length - 1;
+
+                                      return Column(
+                                        children: [
+                                          MomentCard(
+                                            post: moment,
+                                            onLike:
+                                                () => _controller.likePost(
+                                                  moment.postId,
+                                                  moment.userId,
+                                                ),
+                                            onLoadComments:
+                                                () => _controller.loadComments(
+                                                  moment.postId,
+                                                ),
+                                            onAddComment:
+                                                (
+                                                  content, {
+                                                  parentId,
+                                                  replyId,
+                                                }) => _controller.addComment(
+                                                  moment.postId,
+                                                  content,
+                                                  parentId: parentId,
+                                                  replyId: replyId,
+                                                ),
+                                            onLikeComment:
+                                                (id, {publishId}) => _controller
+                                                    .likeComment(id, publishId),
+                                            onDeleteComment:
+                                                (id) =>
+                                                    _controller.deleteComment(
+                                                      id,
+                                                      moment.postId,
+                                                    ),
+                                            onDeletePost:
+                                                (postId) => _controller
+                                                    .deletePost(postId),
+                                            currentUserId:
+                                                _controller.currentUserId,
+                                            controller: _controller,
+                                            flat: true,
+                                            showDecoration: false,
                                           ),
-                                      ],
-                                    );
-                                  }),
+                                          if (!isLast)
+                                            Divider(
+                                              height: 1,
+                                              thickness: 1,
+                                              color:
+                                                  isDark
+                                                      ? Colors.white
+                                                          .withOpacity(0.06)
+                                                      : Colors.grey.shade100,
+                                            ),
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        
+
                         // Bottom padding
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 30),
-                        ),
+                        if (_controller.moments.isNotEmpty)
+                          const SliverToBoxAdapter(child: SizedBox(height: 30)),
                       ],
                     ),
                   );
@@ -495,27 +548,30 @@ class _ProfileHeader extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: isDark 
-                    ? [
-                        Colors.white.withOpacity(0.08),
-                        Colors.white.withOpacity(0.04),
-                      ]
-                    : [
-                        Colors.white.withOpacity(0.9),
-                        Colors.white.withOpacity(0.7),
-                      ],
+                colors:
+                    isDark
+                        ? [
+                          Colors.white.withOpacity(0.08),
+                          Colors.white.withOpacity(0.04),
+                        ]
+                        : [
+                          Colors.white.withOpacity(0.9),
+                          Colors.white.withOpacity(0.7),
+                        ],
               ),
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: isDark 
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.white.withOpacity(0.5),
+                color:
+                    isDark
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.white.withOpacity(0.5),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: isDark 
-                      ? Colors.black.withOpacity(0.3)
-                      : const Color(0xFF10B981).withOpacity(0.1),
+                  color:
+                      isDark
+                          ? Colors.black.withOpacity(0.3)
+                          : const Color(0xFF10B981).withOpacity(0.1),
                   blurRadius: 30,
                   offset: const Offset(0, 10),
                 ),
@@ -552,13 +608,18 @@ class _ProfileHeader extends StatelessWidget {
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                          color:
+                              isDark ? const Color(0xFF1A1A1A) : Colors.white,
                         ),
                         child: CircleAvatar(
                           radius: 42,
-                          backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
+                          backgroundColor: const Color(
+                            0xFF10B981,
+                          ).withOpacity(0.2),
                           backgroundImage:
-                              user.media.isNotEmpty ? NetworkImage(user.media) : null,
+                              user.media.isNotEmpty
+                                  ? NetworkImage(user.media)
+                                  : null,
                           child:
                               user.media.isEmpty
                                   ? Text(
@@ -599,7 +660,9 @@ class _ProfileHeader extends StatelessWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withOpacity(0.15),
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -635,16 +698,20 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Stats row
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark 
-                        ? Colors.white.withOpacity(0.05)
-                        : const Color(0xFFF0FDF8),
+                    color:
+                        isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : const Color(0xFFF0FDF8),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -686,7 +753,7 @@ class _ProfileHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Bio section
                 if (user.description.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -694,9 +761,10 @@ class _ProfileHeader extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isDark 
-                          ? Colors.white.withOpacity(0.03)
-                          : Colors.grey.shade50,
+                      color:
+                          isDark
+                              ? Colors.white.withOpacity(0.03)
+                              : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
@@ -709,7 +777,7 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                   ),
                 ],
-                
+
                 // Interests section
                 if (user.interests.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -718,33 +786,54 @@ class _ProfileHeader extends StatelessWidget {
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: user.interests.split(',').where((e) => e.trim().isNotEmpty).map((interest) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFF10B981).withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark ? Colors.white.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            interest.trim(),
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : const Color(0xFF059669),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                      children:
+                          user.interests
+                              .split(',')
+                              .where((e) => e.trim().isNotEmpty)
+                              .map((interest) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isDark
+                                            ? Colors.white.withOpacity(0.08)
+                                            : const Color(
+                                              0xFF10B981,
+                                            ).withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color:
+                                          isDark
+                                              ? Colors.white.withOpacity(0.1)
+                                              : const Color(
+                                                0xFF10B981,
+                                              ).withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    interest.trim(),
+                                    style: TextStyle(
+                                      color:
+                                          isDark
+                                              ? Colors.white70
+                                              : const Color(0xFF059669),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                );
+                              })
+                              .toList(),
                     ),
                   ),
                 ],
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Edit profile button
                 SizedBox(
                   width: double.infinity,
@@ -807,14 +896,14 @@ class _StatItem extends StatelessWidget {
   final String value;
   final IconData icon;
   final bool isDark;
-  
+
   const _StatItem({
     required this.label,
     required this.value,
     required this.icon,
     required this.isDark,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -822,11 +911,7 @@ class _StatItem extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: const Color(0xFF10B981),
-            ),
+            Icon(icon, size: 16, color: const Color(0xFF10B981)),
             const SizedBox(width: 4),
             Text(
               value,
@@ -841,10 +926,7 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.grey.shade500,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
         ),
       ],
     );
