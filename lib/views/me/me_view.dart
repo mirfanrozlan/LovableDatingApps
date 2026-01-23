@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../controllers/moments_controller.dart';
@@ -618,7 +619,9 @@ class _ProfileHeader extends StatelessWidget {
                           ).withOpacity(0.2),
                           backgroundImage:
                               user.media.isNotEmpty
-                                  ? NetworkImage(user.media)
+                                  ? CachedNetworkImageProvider(
+                                    '${user.media}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                  )
                                   : null,
                           child:
                               user.media.isEmpty
