@@ -80,16 +80,29 @@ class _ChatViewState extends State<ChatView> {
     // _signaling.createRoom(roomId) is moved to VideoCallView to ensure same instance usage
 
     if (mounted) {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.videoCall,
-        arguments: {
-          'roomId': roomId,
-          'isCaller': true,
-          'chat': chat,
-          'type': vidType,
-        },
-      );
+      if (vidType == 1) {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.videoCall,
+          arguments: {
+            'roomId': roomId,
+            'isCaller': true,
+            'chat': chat,
+            'type': vidType,
+          },
+        );
+      } else {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.call,
+          arguments: {
+            'roomId': roomId,
+            'isCaller': true,
+            'chat': chat,
+            'type': vidType,
+          },
+        );
+      }
     }
   }
 

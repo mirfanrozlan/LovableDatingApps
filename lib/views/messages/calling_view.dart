@@ -4,6 +4,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../services/signaling.dart';
+import '../../models/messages/chat_summary_model.dart';
+import '../../controllers/messages/messages_controller.dart';
 
 class CallingView extends StatefulWidget {
   const CallingView({super.key});
@@ -33,8 +35,19 @@ class _CallingViewState extends State<CallingView> {
     await _remoteRenderer.initialize();
 
     final rawArgs = ModalRoute.of(context)?.settings.arguments;
+    bool isCaller = false;
+    ChatSummaryModel? chatModel;
+    int callType = 0;
 
-    if (rawArgs is Map && rawArgs['roomId'] is String) {
+    if (rawArgs is Map) {
+      if (rawArgs['roomId'] is String) _roomId = rawArgs['roomId'] as String;
+      if (rawArgs['isCaller'] == true) isCaller = true;
+      if (rawArgs['chat'] is ChatSummaryModel) {
+        chatModel = rawArgs['chat'] as ChatSummaryModel;
+      }
+      if (rawArgs['type'] is int) callType = rawArgs['type'] as int;
+    } else if (rawArgs is Map && rawArgs['roomId'] is String) {
+      // Legacy support
       _roomId = rawArgs['roomId'] as String;
     }
 
@@ -68,28 +81,50 @@ class _CallingViewState extends State<CallingView> {
       audio: true,
     );
 
-    final roomRef = FirebaseFirestore.instance
-        .collection('rooms')
-        .doc(_roomId!);
-    final snap = await roomRef.get();
-    if (snap.exists && (snap.data()?['offer'] != null)) {
-      await _signaling.joinRoom(_roomId!);
+    if (isCaller && _roomId != null) {
+      // Create room and notify callee
+      await _signaling.createRoom(_roomId!);
+
+      if (chatModel != null && chatModel.id != null) {
+        // Send notification to callee
+        await MessagesController().startIncomingCall(
+          calleeUserId: int.tryParse(chatModel.id!) ?? 0,
+          uuid: _roomId!,
+          callerName: chatModel.name,
+          callerHandle: chatModel.id!,
+          callerAvatar: chatModel.avatarUrl,
+          callType: callType,
+        );
+      }
+    } else if (_roomId != null) {
+      final roomRef = FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(_roomId!);
+      final snap = await roomRef.get();
+      if (snap.exists && (snap.data()?['offer'] != null)) {
+        await _signaling.joinRoom(_roomId!);
+      }
     }
 
-    _roomSub = roomRef.snapshots().listen((snapshot) async {
-      if (!snapshot.exists) {
-        if (mounted) {
-          setState(() => _statusText = 'Call ended');
-          await Future.delayed(const Duration(seconds: 1));
+    if (_roomId != null) {
+      final roomRef = FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(_roomId!);
+      _roomSub = roomRef.snapshots().listen((snapshot) async {
+        if (!snapshot.exists) {
           if (mounted) {
-            await _signaling.hangUp(_localRenderer);
-            if (mounted && Navigator.canPop(context)) {
-              Navigator.pop(context);
+            setState(() => _statusText = 'Call ended');
+            await Future.delayed(const Duration(seconds: 1));
+            if (mounted) {
+              await _signaling.hangUp(_localRenderer, remoteHangup: true);
+              if (mounted && Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
   }
 
   @override
@@ -102,8 +137,13 @@ class _CallingViewState extends State<CallingView> {
   }
 
   Future<void> _endCall(BuildContext context) async {
-    await _signaling.hangUp(_localRenderer);
-    if (mounted) Navigator.pop(context);
+    _roomSub?.cancel();
+    try {
+      await _signaling.hangUp(_localRenderer);
+    } catch (_) {}
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
   }
 
   void _toggleMute() {

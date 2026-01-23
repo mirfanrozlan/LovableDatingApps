@@ -168,7 +168,10 @@ class Signaling {
     return roomId;
   }
 
-  Future<void> hangUp([RTCVideoRenderer? localVideo]) async {
+  Future<void> hangUp(
+    RTCVideoRenderer? localVideo, {
+    bool remoteHangup = false,
+  }) async {
     final lv = localVideo ?? _localRenderer;
     final src = lv?.srcObject ?? LocalStream;
     if (src != null) {
@@ -197,7 +200,7 @@ class Signaling {
     _pendingRemoteCandidates.clear();
     _cancelSubscriptions();
 
-    if (roomId != null) {
+    if (roomId != null && !remoteHangup) {
       final db = FirebaseFirestore.instance;
       final roomRef = db.collection('rooms').doc(roomId);
       final calleeCandidates =
@@ -214,6 +217,11 @@ class Signaling {
 
       await roomRef.delete();
       // Navigation should be handled by the UI
+    }
+
+    // Clear roomId as we are done with this room
+    if (remoteHangup) {
+      roomId = null;
     }
   }
 

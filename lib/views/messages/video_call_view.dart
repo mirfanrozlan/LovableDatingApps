@@ -137,7 +137,7 @@ class _VideoCallViewState extends State<VideoCallView> {
             });
             await Future.delayed(const Duration(seconds: 1));
             if (mounted) {
-              await _signaling.hangUp(_localRenderer);
+              await _signaling.hangUp(_localRenderer, remoteHangup: true);
               if (mounted && Navigator.canPop(context)) {
                 Navigator.pop(context);
               }
@@ -160,8 +160,13 @@ class _VideoCallViewState extends State<VideoCallView> {
   }
 
   Future<void> _endCall(BuildContext context) async {
-    await _signaling.hangUp(_localRenderer);
-    Navigator.pop(context);
+    _roomSub?.cancel();
+    try {
+      await _signaling.hangUp(_localRenderer);
+    } catch (_) {}
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
   }
 
   void _toggleMute() {

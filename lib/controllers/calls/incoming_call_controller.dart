@@ -165,7 +165,7 @@ class IncomingCallController extends ChangeNotifier {
     }
 
     // Accept call and navigate (navigation handled in _acceptCall)
-    await _acceptCall(roomId, navigate: true);
+    await _acceptCall(roomId, navigate: true, replace: false);
   }
 
   /// Accept call from in-app UI
@@ -184,12 +184,16 @@ class IncomingCallController extends ChangeNotifier {
     }
 
     // Accept call and navigate (navigation handled in _acceptCall)
-    await _acceptCall(_roomId!, navigate: true);
+    await _acceptCall(_roomId!, navigate: true, replace: true);
   }
 
   /// Internal method to handle call acceptance
   /// [navigate] - Whether to navigate to call screen (default: true)
-  Future<void> _acceptCall(String roomId, {bool navigate = true}) async {
+  Future<void> _acceptCall(
+    String roomId, {
+    bool navigate = true,
+    bool replace = true,
+  }) async {
     try {
       // Stop ringing
       await _stopRinging();
@@ -206,19 +210,33 @@ class IncomingCallController extends ChangeNotifier {
               print('[IncomingCall] Navigating to video_call_view.dart');
               print('[IncomingCall] Is video call: $_isVideo');
             }
-            nav.pushReplacementNamed(
-              AppRoutes.videoCall,
-              arguments: {'roomId': roomId, 'isIncoming': true},
-            );
+            if (replace) {
+              nav.pushReplacementNamed(
+                AppRoutes.videoCall,
+                arguments: {'roomId': roomId, 'isIncoming': true},
+              );
+            } else {
+              nav.pushNamed(
+                AppRoutes.videoCall,
+                arguments: {'roomId': roomId, 'isIncoming': true},
+              );
+            }
           } else {
             if (kDebugMode) {
               print('[IncomingCall] Navigating to calling_view.dart');
             }
 
-            nav.pushReplacementNamed(
-              AppRoutes.call,
-              arguments: {'roomId': roomId, 'isIncoming': true},
-            );
+            if (replace) {
+              nav.pushReplacementNamed(
+                AppRoutes.call,
+                arguments: {'roomId': roomId, 'isIncoming': true},
+              );
+            } else {
+              nav.pushNamed(
+                AppRoutes.call,
+                arguments: {'roomId': roomId, 'isIncoming': true},
+              );
+            }
           }
         }
       }
