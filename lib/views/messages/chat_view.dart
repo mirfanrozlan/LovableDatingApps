@@ -35,7 +35,8 @@ class _ChatViewState extends State<ChatView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final chat = ModalRoute.of(context)?.settings.arguments as ChatSummaryModel?;
+    final chat =
+        ModalRoute.of(context)?.settings.arguments as ChatSummaryModel?;
     if (chat != null && _chatId == null) {
       _chatId = chat.id;
       _controller.connectToChat(_chatId!);
@@ -76,21 +77,26 @@ class _ChatViewState extends State<ChatView> {
     final b = meId <= calleeId ? calleeId : meId;
     final roomId = 'vc_${a}_${b}_${DateTime.now().millisecondsSinceEpoch}';
 
-    await _signaling.createRoom(roomId);
+    // _signaling.createRoom(roomId) is moved to VideoCallView to ensure same instance usage
 
-    await ctrl.startIncomingCall(
-      calleeUserId: calleeId,
-      uuid: roomId,
-      callerName: chat.name,
-      callerHandle: chat.id ?? '',
-      callerAvatar: chat.avatarUrl,
-      callType: vidType,
-    );
+    if (mounted) {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.videoCall,
+        arguments: {
+          'roomId': roomId,
+          'isCaller': true,
+          'chat': chat,
+          'type': vidType,
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final chat = ModalRoute.of(context)?.settings.arguments as ChatSummaryModel?;
+    final chat =
+        ModalRoute.of(context)?.settings.arguments as ChatSummaryModel?;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -101,15 +107,30 @@ class _ChatViewState extends State<ChatView> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
-                : [const Color(0xFFF0FDF8), const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+            colors:
+                isDark
+                    ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
+                    : [
+                      const Color(0xFFF0FDF8),
+                      const Color(0xFFECFDF5),
+                      const Color(0xFFD1FAE5),
+                    ],
           ),
         ),
         child: Stack(
           children: [
-            _buildDecorativeCircle(top: -50, right: -50, color: const Color(0xFF10B981), opacity: isDark ? 0.15 : 0.2),
-            _buildDecorativeCircle(top: 200, left: -80, color: const Color(0xFF34D399), opacity: isDark ? 0.08 : 0.12),
+            _buildDecorativeCircle(
+              top: -50,
+              right: -50,
+              color: const Color(0xFF10B981),
+              opacity: isDark ? 0.15 : 0.2,
+            ),
+            _buildDecorativeCircle(
+              top: 200,
+              left: -80,
+              color: const Color(0xFF34D399),
+              opacity: isDark ? 0.08 : 0.12,
+            ),
 
             Scaffold(
               backgroundColor: Colors.transparent,
@@ -117,12 +138,15 @@ class _ChatViewState extends State<ChatView> {
                 child: Column(
                   children: [
                     _buildHeader(chat, isDark),
-                    
+
                     Expanded(
                       child: AnimatedBuilder(
                         animation: _controller,
                         builder: (context, _) {
-                          final msgs = _chatId != null ? _controller.getConversation(_chatId!) : [];
+                          final msgs =
+                              _chatId != null
+                                  ? _controller.getConversation(_chatId!)
+                                  : [];
                           if (msgs.length != _lastCount) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               if (_scrollController.hasClients) {
@@ -140,7 +164,9 @@ class _ChatViewState extends State<ChatView> {
                             return Center(
                               child: Text(
                                 'No messages yet.',
-                                style: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white38 : Colors.grey,
+                                ),
                               ),
                             );
                           }
@@ -149,7 +175,8 @@ class _ChatViewState extends State<ChatView> {
                             controller: _scrollController,
                             physics: const BouncingScrollPhysics(),
                             padding: const EdgeInsets.symmetric(vertical: 20),
-                            itemCount: msgs.length + (_controller.isTyping ? 1 : 0),
+                            itemCount:
+                                msgs.length + (_controller.isTyping ? 1 : 0),
                             itemBuilder: (context, i) {
                               if (_controller.isTyping && i == msgs.length) {
                                 return const _TypingBubble();
@@ -181,20 +208,27 @@ class _ChatViewState extends State<ChatView> {
   Widget _buildHeader(ChatSummaryModel? chat, bool isDark) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 20, 16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-      ),
+      decoration: BoxDecoration(color: Colors.transparent),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.8),
+          color:
+              isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.white.withOpacity(0.8),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.5),
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.white.withOpacity(0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.05),
+              color:
+                  isDark
+                      ? Colors.black.withOpacity(0.2)
+                      : const Color(0xFF10B981).withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -203,7 +237,10 @@ class _ChatViewState extends State<ChatView> {
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white70 : Colors.black87),
+              icon: Icon(
+                Icons.arrow_back_rounded,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             const SizedBox(width: 4),
@@ -211,17 +248,29 @@ class _ChatViewState extends State<ChatView> {
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF34D399)]),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                ),
               ),
               child: CircleAvatar(
                 radius: 20,
-                backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                backgroundImage: chat?.avatarUrl != null && chat!.avatarUrl!.isNotEmpty 
-                    ? NetworkImage(chat.avatarUrl!) 
-                    : null,
-                child: chat?.avatarUrl == null || chat!.avatarUrl!.isEmpty 
-                    ? Text(chat?.initials ?? '?', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13)) 
-                    : null,
+                backgroundColor:
+                    isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                backgroundImage:
+                    chat?.avatarUrl != null && chat!.avatarUrl!.isNotEmpty
+                        ? NetworkImage(chat.avatarUrl!)
+                        : null,
+                child:
+                    chat?.avatarUrl == null || chat!.avatarUrl!.isEmpty
+                        ? Text(
+                          chat?.initials ?? '?',
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        )
+                        : null,
               ),
             ),
             const SizedBox(width: 12),
@@ -241,9 +290,12 @@ class _ChatViewState extends State<ChatView> {
                     _controller.isTyping ? 'typing...' : 'online',
                     style: TextStyle(
                       fontSize: 12,
-                      color: _controller.isTyping 
-                          ? const Color(0xFF10B981) 
-                          : (isDark ? Colors.white54 : Colors.grey.shade600),
+                      color:
+                          _controller.isTyping
+                              ? const Color(0xFF10B981)
+                              : (isDark
+                                  ? Colors.white54
+                                  : Colors.grey.shade600),
                     ),
                   ),
                 ],
@@ -251,19 +303,13 @@ class _ChatViewState extends State<ChatView> {
             ),
             _HeaderIcon(
               icon: Icons.call_rounded,
-              onTap: () async {
-                await initCall(chat, 0);
-                if (mounted) Navigator.pushNamed(context, AppRoutes.call, arguments: chat);
-              },
+              onTap: () => initCall(chat, 0),
               isDark: isDark,
             ),
             const SizedBox(width: 8),
             _HeaderIcon(
               icon: Icons.videocam_rounded,
-              onTap: () async {
-                await initCall(chat, 1);
-                if (mounted) Navigator.pushNamed(context, AppRoutes.videoCall, arguments: chat);
-              },
+              onTap: () => initCall(chat, 1),
               isDark: isDark,
             ),
           ],
@@ -281,11 +327,17 @@ class _ChatViewState extends State<ChatView> {
           color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.2),
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : const Color(0xFF10B981).withOpacity(0.2),
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.05),
+              color:
+                  isDark
+                      ? Colors.black.withOpacity(0.2)
+                      : const Color(0xFF10B981).withOpacity(0.05),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -295,7 +347,11 @@ class _ChatViewState extends State<ChatView> {
           children: [
             const SizedBox(width: 8),
             IconButton(
-              icon: Icon(Icons.add_circle_outline_rounded, color: const Color(0xFF10B981), size: 26),
+              icon: Icon(
+                Icons.add_circle_outline_rounded,
+                color: const Color(0xFF10B981),
+                size: 26,
+              ),
               onPressed: () {},
             ),
             Expanded(
@@ -304,9 +360,14 @@ class _ChatViewState extends State<ChatView> {
                 style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
-                  hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.grey,
+                  ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                 ),
                 onChanged: (_) {
                   if (_chatId == null) return;
@@ -335,7 +396,11 @@ class _ChatViewState extends State<ChatView> {
               ),
               child: IconButton(
                 onPressed: _sendMessage,
-                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                icon: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
             ),
           ],
@@ -373,7 +438,11 @@ class _HeaderIcon extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isDark;
-  const _HeaderIcon({required this.icon, required this.onTap, required this.isDark});
+  const _HeaderIcon({
+    required this.icon,
+    required this.onTap,
+    required this.isDark,
+  });
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -409,7 +478,8 @@ class _TypingBubble extends StatelessWidget {
             bottomRight: Radius.circular(20),
             bottomLeft: Radius.circular(4),
           ),
-          border: isDark ? Border.all(color: Colors.white.withOpacity(0.1)) : null,
+          border:
+              isDark ? Border.all(color: Colors.white.withOpacity(0.1)) : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

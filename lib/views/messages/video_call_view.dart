@@ -5,6 +5,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../models/messages/chat_summary_model.dart';
+import '../../controllers/messages/messages_controller.dart';
 import '../../services/signaling.dart';
 
 class VideoCallView extends StatefulWidget {
@@ -37,8 +38,27 @@ class _VideoCallViewState extends State<VideoCallView> {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
 
+    _signaling.onAddRemoteStream = (stream) {
+      if (!mounted) return;
+      setState(() {
+        _remoteRenderer.srcObject = stream;
+      });
+    };
+
     final rawArgs = ModalRoute.of(context)?.settings.arguments;
-    if (rawArgs is Map && rawArgs['roomId'] is String) {
+    bool isCaller = false;
+    ChatSummaryModel? chatModel;
+    int callType = 1;
+
+    if (rawArgs is Map) {
+      if (rawArgs['roomId'] is String) _roomId = rawArgs['roomId'] as String;
+      if (rawArgs['isCaller'] == true) isCaller = true;
+      if (rawArgs['chat'] is ChatSummaryModel) {
+        chatModel = rawArgs['chat'] as ChatSummaryModel;
+      }
+      if (rawArgs['type'] is int) callType = rawArgs['type'] as int;
+    } else if (rawArgs is Map && rawArgs['roomId'] is String) {
+      // Legacy support for IncomingCallController which sends {roomId, isIncoming}
       _roomId = rawArgs['roomId'] as String;
     }
 
@@ -77,19 +97,43 @@ class _VideoCallViewState extends State<VideoCallView> {
 
     await _signaling.openMedia(_localRenderer, _remoteRenderer);
 
-    final roomRef = FirebaseFirestore.instance
-        .collection('rooms')
-        .doc(_roomId!);
-    final snap = await roomRef.get();
-    if (snap.exists && (snap.data()?['offer'] != null)) {
-      await _signaling.joinRoom(_roomId!);
+    if (isCaller && _roomId != null) {
+      // Create room and notify callee
+      await _signaling.createRoom(_roomId!);
+
+      if (chatModel != null && chatModel.id != null) {
+        // Send notification to callee
+        // Note: passing chatModel.name as callerName because ChatView did so.
+        // Ideally this should be current user's name.
+        await MessagesController().startIncomingCall(
+          calleeUserId: int.tryParse(chatModel.id!) ?? 0,
+          uuid: _roomId!,
+          callerName: chatModel.name,
+          callerHandle: chatModel.id!,
+          callerAvatar: chatModel.avatarUrl,
+          callType: callType,
+        );
+      }
+    } else if (_roomId != null) {
+      final roomRef = FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(_roomId!);
+      final snap = await roomRef.get();
+      if (snap.exists && (snap.data()?['offer'] != null)) {
+        await _signaling.joinRoom(_roomId!);
+      }
     }
 
-    _roomSub = roomRef.snapshots().listen((snapshot) async {
-      if (!snapshot.exists) {
-        setState(() => _statusText = 'Nobody in this call');
-      }
-    });
+    if (_roomId != null) {
+      final roomRef = FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(_roomId!);
+      _roomSub = roomRef.snapshots().listen((snapshot) async {
+        if (!snapshot.exists) {
+          if (mounted) setState(() => _statusText = 'Nobody in this call');
+        }
+      });
+    }
 
     if (mounted) setState(() => _initialized = true);
   }

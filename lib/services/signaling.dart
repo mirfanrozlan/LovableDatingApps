@@ -47,7 +47,7 @@ class Signaling {
   bool _remoteDescriptionSet = false;
   bool _pcClosed = false;
   final List<StreamSubscription> _subscriptions = [];
-  // StreamStateCallback? onAddRemoteStream;clc
+  void Function(MediaStream stream)? onAddRemoteStream;
 
   Future<String> createRoom(String fixedRoomId) async {
     FirebaseFirestore db = FirebaseFirestore.instance;
@@ -81,21 +81,7 @@ class Signaling {
     });
     _isCaller = true;
 
-    peerConnection?.onTrack = (RTCTrackEvent event) {
-      if (event.streams.isNotEmpty) {
-        RemoteStream = event.streams[0];
-        if (_remoteRenderer != null) {
-          _remoteRenderer!.srcObject = RemoteStream;
-        }
-      } else {
-        if (RemoteStream != null) {
-          RemoteStream!.addTrack(event.track);
-          if (_remoteRenderer != null) {
-            _remoteRenderer!.srcObject = RemoteStream;
-          }
-        }
-      }
-    };
+    peerConnection?.onTrack = _handleOnTrack;
 
     var callerCandidatesCollection = roomRef.collection('callerCandidates');
 
@@ -367,12 +353,13 @@ class Signaling {
     _localRenderer = localVideo;
     _remoteRenderer = remoteVideo;
     localVideo.srcObject = stream;
-    try {
-      RemoteStream = await createLocalMediaStream('remote');
-      remoteVideo.srcObject = RemoteStream;
-    } catch (e) {
-      print('createLocalMediaStream error: $e');
-    }
+    // RemoteStream is initialized when tracks are received
+    // try {
+    //   RemoteStream = await createLocalMediaStream('remote');
+    //   remoteVideo.srcObject = RemoteStream;
+    // } catch (e) {
+    //   print('createLocalMediaStream error: $e');
+    // }
     try {
       await Helper.setSpeakerphoneOn(true);
     } catch (e) {
@@ -483,5 +470,35 @@ class Signaling {
       s.cancel();
     }
     _subscriptions.clear();
+  }
+
+  Future<void> _handleOnTrack(RTCTrackEvent event) async {
+    print('onTrack: ${event.streams.length} streams');
+    if (event.streams.isNotEmpty) {
+      RemoteStream = event.streams[0];
+    } else {
+      if (RemoteStream == null) {
+        try {
+          RemoteStream = await createLocalMediaStream('remote_stream');
+        } catch (e) {
+          print('Error creating fallback remote stream: $e');
+        }
+      }
+      if (RemoteStream != null) {
+        RemoteStream!.addTrack(event.track);
+      }
+    }
+
+    if (_remoteRenderer != null && RemoteStream != null) {
+      final tracks = RemoteStream!.getTracks();
+      print(
+        'Updating remote renderer. StreamId: ${RemoteStream!.id}, Tracks: ${tracks.length}',
+      );
+      for (final t in tracks) {
+        print('  Track: ${t.kind}, id: ${t.id}, enabled: ${t.enabled}');
+      }
+      _remoteRenderer!.srcObject = RemoteStream;
+      onAddRemoteStream?.call(RemoteStream!);
+    }
   }
 }
