@@ -247,32 +247,34 @@ class IncomingCallController extends ChangeNotifier {
               print('[IncomingCall] Navigating to video_call_view.dart');
               print('[IncomingCall] Is video call: $_isVideo');
             }
+            final args = {
+              'roomId': roomId,
+              'isIncoming': true,
+              'callerName': callerName,
+              'callerId': callerId,
+              'avatarUrl': avatarUrl,
+            };
             if (replace) {
-              nav.pushReplacementNamed(
-                AppRoutes.videoCall,
-                arguments: {'roomId': roomId, 'isIncoming': true},
-              );
+              nav.pushReplacementNamed(AppRoutes.videoCall, arguments: args);
             } else {
-              nav.pushNamed(
-                AppRoutes.videoCall,
-                arguments: {'roomId': roomId, 'isIncoming': true},
-              );
+              nav.pushNamed(AppRoutes.videoCall, arguments: args);
             }
           } else {
             if (kDebugMode) {
               print('[IncomingCall] Navigating to calling_view.dart');
             }
+            final args = {
+              'roomId': roomId,
+              'isIncoming': true,
+              'callerName': callerName,
+              'callerId': callerId,
+              'avatarUrl': avatarUrl,
+            };
 
             if (replace) {
-              nav.pushReplacementNamed(
-                AppRoutes.call,
-                arguments: {'roomId': roomId, 'isIncoming': true},
-              );
+              nav.pushReplacementNamed(AppRoutes.call, arguments: args);
             } else {
-              nav.pushNamed(
-                AppRoutes.call,
-                arguments: {'roomId': roomId, 'isIncoming': true},
-              );
+              nav.pushNamed(AppRoutes.call, arguments: args);
             }
           }
         }

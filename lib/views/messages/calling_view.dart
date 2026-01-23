@@ -27,10 +27,37 @@ class _CallingViewState extends State<CallingView> {
   bool _speakerOn = true;
   StreamSubscription? _roomSub;
 
+  // Timer and Profile
+  Timer? _callTimer;
+  Duration _callDuration = Duration.zero;
+  String? _remoteAvatarUrl;
+  String? _remoteName;
+
   @override
   void initState() {
     super.initState();
     _init();
+  }
+
+  void _startTimer() {
+    _callTimer?.cancel();
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _callDuration = Duration(seconds: _callDuration.inSeconds + 1);
+        });
+      }
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    if (duration.inHours > 0) {
+      return '${twoDigits(duration.inHours)}:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
   }
 
   Future<void> _init() async {
@@ -47,6 +74,13 @@ class _CallingViewState extends State<CallingView> {
       if (rawArgs['isCaller'] == true) isCaller = true;
       if (rawArgs['chat'] is ChatSummaryModel) {
         chatModel = rawArgs['chat'] as ChatSummaryModel;
+        // Store profile info
+        if (mounted) {
+          setState(() {
+            _remoteName = chatModel?.name;
+            _remoteAvatarUrl = chatModel?.avatarUrl;
+          });
+        }
       }
       if (rawArgs['type'] is int) callType = rawArgs['type'] as int;
     } else if (rawArgs is Map && rawArgs['roomId'] is String) {
@@ -54,14 +88,30 @@ class _CallingViewState extends State<CallingView> {
       _roomId = rawArgs['roomId'] as String;
     }
 
+    // Handle caller info from map if not in ChatSummaryModel
+    if (rawArgs is Map && _remoteName == null) {
+      if (mounted) {
+        setState(() {
+          if (rawArgs['callerName'] is String) {
+            _remoteName = rawArgs['callerName'] as String;
+          }
+          if (rawArgs['avatarUrl'] is String) {
+            _remoteAvatarUrl = rawArgs['avatarUrl'] as String;
+          }
+        });
+      }
+    }
+
     _signaling.onPeerConnectionState = (state) {
       if (!mounted) return;
       setState(() {
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
           _statusText = 'Connection failed';
+          _callTimer?.cancel();
         } else if (state ==
             RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           _statusText = 'Connected';
+          _startTimer();
         } else if (state ==
             RTCPeerConnectionState.RTCPeerConnectionStateConnecting) {
           _statusText = 'Connecting...';
@@ -132,6 +182,7 @@ class _CallingViewState extends State<CallingView> {
 
   @override
   void dispose() {
+    _callTimer?.cancel();
     // End the active CallKit session
     if (_roomId != null) {
       CallKitService.endCall(_roomId!);
@@ -186,9 +237,42 @@ class _CallingViewState extends State<CallingView> {
           children: [
             Text(_statusText, style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 40),
-            const CircleAvatar(radius: 60),
+            CircleAvatar(
+              radius: 60,
+              backgroundColor: Colors.grey[800],
+              backgroundImage:
+                  _remoteAvatarUrl != null && _remoteAvatarUrl!.isNotEmpty
+                      ? NetworkImage(_remoteAvatarUrl!)
+                      : null,
+              child:
+                  _remoteAvatarUrl == null || _remoteAvatarUrl!.isEmpty
+                      ? Text(
+                        _remoteName?.substring(0, 1).toUpperCase() ?? '?',
+                        style: const TextStyle(
+                          fontSize: 48,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                      : null,
+            ),
             const SizedBox(height: 20),
-            const Text('00:01', style: TextStyle(color: Colors.white70)),
+            if (_remoteName != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  _remoteName!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            Text(
+              _formatDuration(_callDuration),
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
+            ),
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -35,6 +35,12 @@ class _VideoCallViewState extends State<VideoCallView> {
   static const _pipChannel = MethodChannel('app.pip');
   bool _inPipMode = false;
 
+  // Timer
+  Timer? _callTimer;
+  Duration _callDuration = Duration.zero;
+  String? _remoteName;
+  String? _remoteAvatarUrl;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +76,27 @@ class _VideoCallViewState extends State<VideoCallView> {
         'height': 16,
       });
     } catch (_) {}
+  }
+
+  void _startTimer() {
+    _callTimer?.cancel();
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _callDuration = Duration(seconds: _callDuration.inSeconds + 1);
+        });
+      }
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    if (duration.inHours > 0) {
+      return '${twoDigits(duration.inHours)}:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
   }
 
   @override
@@ -116,10 +143,12 @@ class _VideoCallViewState extends State<VideoCallView> {
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
           _statusText = 'Connection failed';
           _showStatus = true;
+          _callTimer?.cancel();
         } else if (state ==
             RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           _statusText = 'Connected';
           _showStatus = true;
+          _startTimer();
           Future.delayed(const Duration(seconds: 1), () {
             if (!mounted) return;
             setState(() {
@@ -200,6 +229,7 @@ class _VideoCallViewState extends State<VideoCallView> {
 
   @override
   void dispose() {
+    _callTimer?.cancel();
     // If in PiP mode when call ends, close PiP (minimize app)
     if (_inPipMode) {
       _pipChannel.invokeMethod('closePip');
@@ -276,17 +306,37 @@ class _VideoCallViewState extends State<VideoCallView> {
           top: 24,
           left: 24,
           right: 24,
-          child:
-              _showStatus && !_inPipMode
-                  ? Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(8),
+          child: Column(
+            children: [
+              if (_showStatus && !_inPipMode)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(_roomId != null ? _statusText : 'Preparing...'),
+                ),
+              if (!_showStatus && !_inPipMode && _callDuration != Duration.zero)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _formatDuration(_callDuration),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Text(_roomId != null ? _statusText : 'Preparing...'),
-                  )
-                  : const SizedBox.shrink(),
+                  ),
+                ),
+            ],
+          ),
         ),
         Positioned(
           top: 80,
