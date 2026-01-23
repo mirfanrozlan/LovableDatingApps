@@ -130,7 +130,19 @@ class _VideoCallViewState extends State<VideoCallView> {
           .doc(_roomId!);
       _roomSub = roomRef.snapshots().listen((snapshot) async {
         if (!snapshot.exists) {
-          if (mounted) setState(() => _statusText = 'Nobody in this call');
+          if (mounted) {
+            setState(() {
+              _statusText = 'Call ended';
+              _showStatus = true;
+            });
+            await Future.delayed(const Duration(seconds: 1));
+            if (mounted) {
+              await _signaling.hangUp(_localRenderer);
+              if (mounted && Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            }
+          }
         }
       });
     }

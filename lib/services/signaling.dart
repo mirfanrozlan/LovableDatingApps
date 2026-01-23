@@ -185,8 +185,11 @@ class Signaling {
     }
 
     if (peerConnection != null) {
-      await peerConnection!.close();
-      await peerConnection!.dispose();
+      try {
+        await peerConnection!.close();
+        await peerConnection!.dispose();
+      } catch (_) {}
+      peerConnection = null;
     }
 
     _pcClosed = true;
@@ -210,11 +213,7 @@ class Signaling {
       }
 
       await roomRef.delete();
-      appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/discover',
-        (route) => false,
-      );
-      await Future.delayed(Duration(milliseconds: 500));
+      // Navigation should be handled by the UI
     }
   }
 
