@@ -28,6 +28,11 @@ class IncomingCallController extends ChangeNotifier {
   String? _callerId;
   String? _avatarUrl;
   bool _isVideo = false;
+
+  // Active call state
+  String? _activeCallRoomId;
+  bool _activeCallIsVideo = false;
+
   Timer? _timeoutTimer;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _roomSubscription;
 
@@ -39,6 +44,23 @@ class IncomingCallController extends ChangeNotifier {
   String? get callerId => _callerId;
   String? get avatarUrl => _avatarUrl;
   bool get isVideo => _isVideo;
+
+  String? get activeCallRoomId => _activeCallRoomId;
+  bool get activeCallIsVideo => _activeCallIsVideo;
+
+  /// Set active call state
+  void setActiveCall(String roomId, bool isVideo) {
+    _activeCallRoomId = roomId;
+    _activeCallIsVideo = isVideo;
+    notifyListeners();
+  }
+
+  /// Clear active call state
+  void clearActiveCall() {
+    _activeCallRoomId = null;
+    _activeCallIsVideo = false;
+    notifyListeners();
+  }
 
   /// Set video call flag
   void setIsVideo(bool value) {
@@ -195,8 +217,23 @@ class IncomingCallController extends ChangeNotifier {
     bool replace = true,
   }) async {
     try {
-      // Stop ringing
+      // Store call details before stopping ringing
+      final callerName = _callerName ?? 'Unknown';
+      final callerId = _callerId ?? '';
+      final avatarUrl = _avatarUrl;
+      final isVideo = _isVideo;
+
+      // Stop ringing (dismisses incoming UI)
       await _stopRinging();
+
+      // Start "Active" call session in CallKit to show "Return to Call" chip
+      await CallKitService.startCall(
+        callUuid: roomId,
+        handle: callerId,
+        nameCaller: callerName,
+        avatar: avatarUrl,
+        isVideo: isVideo,
+      );
 
       // Notify backend that call was accepted
       await _notifyBackendCallAccepted(roomId);

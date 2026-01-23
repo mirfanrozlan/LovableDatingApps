@@ -3,10 +3,15 @@ import 'dart:async';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mobile/controllers/calls/incoming_call_controller.dart';
 import '../../widgets/common/app_scaffold.dart';
+import 'package:flutter/services.dart';
 import '../../models/messages/chat_summary_model.dart';
 import '../../controllers/messages/messages_controller.dart';
 import '../../services/signaling.dart';
+import '../../controllers/calls/incoming_call_controller.dart';
+
+import '../../services/callkit_service.dart';
 
 class VideoCallView extends StatefulWidget {
   const VideoCallView({super.key});
@@ -27,11 +32,54 @@ class _VideoCallViewState extends State<VideoCallView> {
   String _statusText = 'Preparing...';
   bool _showStatus = true;
   StreamSubscription? _roomSub;
+  static const _pipChannel = MethodChannel('app.pip');
+  bool _inPipMode = false;
 
   @override
   void initState() {
     super.initState();
+    _pipChannel.setMethodCallHandler((call) async {
+      if (call.method == 'pipModeChanged') {
+        final args = call.arguments as Map;
+        if (mounted) {
+          setState(() {
+            _inPipMode = args['isInPipMode'] as bool;
+          });
+        }
+      }
+    });
+    _enableAutoPip();
     _init();
+  }
+
+  Future<void> _enableAutoPip() async {
+    try {
+      await _pipChannel.invokeMethod('setAutoPip', {
+        'enabled': true,
+        'width': 9,
+        'height': 16,
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _disableAutoPip() async {
+    try {
+      await _pipChannel.invokeMethod('setAutoPip', {
+        'enabled': false,
+        'width': 9,
+        'height': 16,
+      });
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      // Android 12+ handles auto-pip via setAutoEnterEnabled
+      // For older versions, we might need to manually trigger enterPictureInPictureMode
+      // But for now, we rely on the channel configuration.
+    }
   }
 
   Future<void> _init() async {
@@ -152,6 +200,21 @@ class _VideoCallViewState extends State<VideoCallView> {
 
   @override
   void dispose() {
+    // If in PiP mode when call ends, close PiP (minimize app)
+    if (_inPipMode) {
+      _pipChannel.invokeMethod('closePip');
+    }
+    _disableAutoPip();
+    // End the active CallKit session
+    if (_roomId != null) {
+      // We don't await here to avoid blocking dispose
+      CallKitService.endCall(_roomId!);
+    }
+
+    if (_roomId != null &&
+        IncomingCallController.instance.activeCallRoomId == _roomId) {
+      IncomingCallController.instance.clearActiveCall();
+    }
     _roomSub?.cancel();
     _signaling.hangUp(_localRenderer);
     _localRenderer.dispose();
@@ -198,109 +261,117 @@ class _VideoCallViewState extends State<VideoCallView> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child:
-                _initialized
-                    ? RTCVideoView(
-                      _remoteRenderer,
+    final content = Stack(
+      children: [
+        Positioned.fill(
+          child:
+              _initialized
+                  ? RTCVideoView(
+                    _remoteRenderer,
+                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  )
+                  : Container(color: Colors.black),
+        ),
+        Positioned(
+          top: 24,
+          left: 24,
+          right: 24,
+          child:
+              _showStatus && !_inPipMode
+                  ? Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(_roomId != null ? _statusText : 'Preparing...'),
+                  )
+                  : const SizedBox.shrink(),
+        ),
+        Positioned(
+          top: 80,
+          right: 16,
+          child:
+              _inPipMode
+                  ? const SizedBox.shrink()
+                  : Container(
+                    width: 110,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x30000000), blurRadius: 8),
+                      ],
+                    ),
+                    child: RTCVideoView(
+                      _localRenderer,
+                      mirror: true,
                       objectFit:
                           RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                    )
-                    : Container(color: Colors.black),
-          ),
-          Positioned(
-            top: 24,
-            left: 24,
-            right: 24,
-            child:
-                _showStatus
-                    ? Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+        ),
+        Positioned(
+          bottom: 40,
+          left: 0,
+          right: 0,
+          child:
+              _inPipMode
+                  ? const SizedBox.shrink()
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.grey,
+                        child: IconButton(
+                          icon: Icon(
+                            _speakerOn ? Icons.volume_up : Icons.volume_off,
+                            color: Colors.white,
+                          ),
+                          onPressed: _toggleSpeaker,
+                        ),
                       ),
-                      child: Text(
-                        _roomId != null ? _statusText : 'Preparing...',
+                      const SizedBox(width: 24),
+                      CircleAvatar(
+                        backgroundColor: Colors.red,
+                        child: IconButton(
+                          icon: const Icon(Icons.call_end, color: Colors.white),
+                          onPressed: () => _endCall(context),
+                        ),
                       ),
-                    )
-                    : const SizedBox.shrink(),
-          ),
-          Positioned(
-            top: 80,
-            right: 16,
-            child: Container(
-              width: 110,
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x30000000), blurRadius: 8),
-                ],
-              ),
-              child: RTCVideoView(
-                _localRenderer,
-                mirror: true,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.grey,
-                  child: IconButton(
-                    icon: Icon(
-                      _speakerOn ? Icons.volume_up : Icons.volume_off,
-                      color: Colors.white,
-                    ),
-                    onPressed: _toggleSpeaker,
+                      const SizedBox(width: 24),
+                      CircleAvatar(
+                        backgroundColor: Colors.grey,
+                        child: IconButton(
+                          icon: Icon(
+                            _muted ? Icons.mic_off : Icons.mic,
+                            color: Colors.white,
+                          ),
+                          onPressed: _toggleMute,
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      CircleAvatar(
+                        backgroundColor: Colors.grey,
+                        child: IconButton(
+                          icon: Icon(
+                            _cameraOff ? Icons.videocam_off : Icons.videocam,
+                            color: Colors.white,
+                          ),
+                          onPressed: _toggleCamera,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 24),
-                CircleAvatar(
-                  backgroundColor: Colors.red,
-                  child: IconButton(
-                    icon: const Icon(Icons.call_end, color: Colors.white),
-                    onPressed: () => _endCall(context),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                CircleAvatar(
-                  backgroundColor: Colors.grey,
-                  child: IconButton(
-                    icon: Icon(
-                      _muted ? Icons.mic_off : Icons.mic,
-                      color: Colors.white,
-                    ),
-                    onPressed: _toggleMute,
-                  ),
-                ),
-                const SizedBox(width: 24),
-                CircleAvatar(
-                  backgroundColor: Colors.grey,
-                  child: IconButton(
-                    icon: Icon(
-                      _cameraOff ? Icons.videocam_off : Icons.videocam,
-                      color: Colors.white,
-                    ),
-                    onPressed: _toggleCamera,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    if (_inPipMode) {
+      return Scaffold(body: content);
+    }
+
+    return AppScaffold(child: content);
   }
 }

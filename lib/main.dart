@@ -214,8 +214,66 @@ void main() async {
   );
 }
 
-class LoveConnectApp extends StatelessWidget {
+class LoveConnectApp extends StatefulWidget {
   const LoveConnectApp({super.key});
+
+  @override
+  State<LoveConnectApp> createState() => _LoveConnectAppState();
+}
+
+class _LoveConnectAppState extends State<LoveConnectApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkActiveCall();
+    }
+  }
+
+  void _checkActiveCall() {
+    final controller = IncomingCallController.instance;
+    if (controller.activeCallRoomId != null) {
+      if (kDebugMode) {
+        print('[LoveConnectApp] App resumed. Active call: ${controller.activeCallRoomId}');
+      }
+      
+      final current = appRouteObserver.currentRoute;
+      if (current != AppRoutes.call && current != AppRoutes.videoCall) {
+         if (kDebugMode) {
+           print('[LoveConnectApp] Restoring call view. Current: $current');
+         }
+         final nav = appNavigatorKey.currentState;
+         if (nav != null) {
+           if (controller.activeCallIsVideo) {
+             nav.pushNamed(
+               AppRoutes.videoCall,
+               arguments: {'roomId': controller.activeCallRoomId, 'isIncoming': true},
+             );
+           } else {
+             nav.pushNamed(
+               AppRoutes.call,
+               arguments: {'roomId': controller.activeCallRoomId, 'isIncoming': true},
+             );
+           }
+         }
+      } else {
+         if (kDebugMode) {
+           print('[LoveConnectApp] Already on call view');
+         }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -231,6 +289,7 @@ class LoveConnectApp extends StatelessWidget {
           routes: AppRoutes.routes,
           initialRoute: AppRoutes.splash,
           navigatorKey: appNavigatorKey,
+          navigatorObservers: [appRouteObserver],
         );
       },
     );

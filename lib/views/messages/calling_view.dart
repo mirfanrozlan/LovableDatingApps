@@ -6,6 +6,9 @@ import '../../widgets/common/app_scaffold.dart';
 import '../../services/signaling.dart';
 import '../../models/messages/chat_summary_model.dart';
 import '../../controllers/messages/messages_controller.dart';
+import '../../services/signaling.dart';
+import '../../services/callkit_service.dart';
+import '../../controllers/calls/incoming_call_controller.dart';
 
 class CallingView extends StatefulWidget {
   const CallingView({super.key});
@@ -129,6 +132,15 @@ class _CallingViewState extends State<CallingView> {
 
   @override
   void dispose() {
+    // End the active CallKit session
+    if (_roomId != null) {
+      CallKitService.endCall(_roomId!);
+    }
+
+    if (_roomId != null &&
+        IncomingCallController.instance.activeCallRoomId == _roomId) {
+      IncomingCallController.instance.clearActiveCall();
+    }
     _roomSub?.cancel();
     _signaling.hangUp(_localRenderer);
     _localRenderer.dispose();

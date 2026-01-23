@@ -133,6 +133,66 @@ class CallKitService {
     }
   }
 
+  /// Start an outgoing call/set call as active in CallKit
+  /// This helps show the "Return to Call" chip in status bar
+  static Future<void> startCall({
+    required String callUuid,
+    required String handle,
+    required String nameCaller,
+    String? avatar,
+    bool isVideo = false,
+  }) async {
+    if (kIsWeb) return;
+
+    try {
+      final id = callUuid.isEmpty ? _uuid.v4() : callUuid;
+      final params = CallKitParams(
+        id: id,
+        nameCaller: nameCaller,
+        handle: handle,
+        appName: 'LoveConnect',
+        avatar: avatar,
+        type: isVideo ? 1 : 0,
+        duration: 30000,
+        textAccept: 'Accept',
+        textDecline: 'Decline',
+        extra: <String, dynamic>{
+          'room_id': callUuid,
+          'call_uuid': callUuid,
+          'caller_id': handle,
+          'isVideo': isVideo,
+        },
+        android: const AndroidParams(
+          isCustomNotification: true,
+          isShowLogo: true,
+          ringtonePath: null,
+          backgroundColor: '#0C1B2A',
+          actionColor: '#4CAF50',
+          // Important for "return to call"
+        ),
+        ios: IOSParams(
+          handleType: 'generic',
+          supportsVideo: isVideo,
+          maximumCallGroups: 1,
+          maximumCallsPerCallGroup: 1,
+        ),
+      );
+
+      await FlutterCallkitIncoming.startCall(params);
+
+      // Immediately set connected as we are just mirroring the active state
+      await FlutterCallkitIncoming.setCallConnected(id);
+
+      if (kDebugMode) {
+        print('[CallKit] Started active call: $id');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[CallKit] Start active call error: $e');
+      }
+    }
+  }
+
   /// Show incoming call notification with native CallKit UI
   ///
   /// [callerName] - Name of the caller
