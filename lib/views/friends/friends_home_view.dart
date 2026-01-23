@@ -34,7 +34,14 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
     try {
       final data = await _service.getInvites();
       setState(() {
-        _invites = data.where((i) => i.friendStatus == 'accepted').toList();
+        _invites =
+            data
+                .where(
+                  (i) =>
+                      i.friendStatus == 'accepted' ||
+                      i.friendStatus == 'pending',
+                )
+                .toList();
       });
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -51,7 +58,8 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
     final chat = ChatSummaryModel(
       id: user.id.toString(),
       name: user.name,
-      initials: user.name.isNotEmpty ? user.name.substring(0, 1).toUpperCase() : '?',
+      initials:
+          user.name.isNotEmpty ? user.name.substring(0, 1).toUpperCase() : '?',
       avatarUrl: user.media,
       lastMessage: 'Say hi!',
       time: '',
@@ -72,16 +80,31 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
-                : [const Color(0xFFF0FDF8), const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+            colors:
+                isDark
+                    ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
+                    : [
+                      const Color(0xFFF0FDF8),
+                      const Color(0xFFECFDF5),
+                      const Color(0xFFD1FAE5),
+                    ],
           ),
         ),
         child: Stack(
           children: [
             // Decorative elements
-            _buildDecorativeCircle(top: -50, right: -50, color: const Color(0xFF10B981), opacity: isDark ? 0.15 : 0.2),
-            _buildDecorativeCircle(top: 200, left: -80, color: const Color(0xFF34D399), opacity: isDark ? 0.08 : 0.12),
+            _buildDecorativeCircle(
+              top: -50,
+              right: -50,
+              color: const Color(0xFF10B981),
+              opacity: isDark ? 0.15 : 0.2,
+            ),
+            _buildDecorativeCircle(
+              top: 200,
+              left: -80,
+              color: const Color(0xFF34D399),
+              opacity: isDark ? 0.08 : 0.12,
+            ),
 
             Scaffold(
               backgroundColor: Colors.transparent,
@@ -96,11 +119,17 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                         onRefresh: _loadInvites,
                         color: const Color(0xFF10B981),
                         child: CustomScrollView(
-                          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                          physics: const BouncingScrollPhysics(
+                            parent: AlwaysScrollableScrollPhysics(),
+                          ),
                           slivers: [
                             if (_loading && _invites.isEmpty)
                               const SliverFillRemaining(
-                                child: Center(child: CircularProgressIndicator(color: Color(0xFF10B981))),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ),
                               )
                             else if (_error != null && _invites.isEmpty)
                               SliverFillRemaining(
@@ -108,12 +137,27 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Text('Error: $_error', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87)),
+                                      Text(
+                                        'Error: $_error',
+                                        style: TextStyle(
+                                          color:
+                                              isDark
+                                                  ? Colors.white70
+                                                  : Colors.black87,
+                                        ),
+                                      ),
                                       const SizedBox(height: 16),
                                       ElevatedButton(
-                                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF10B981,
+                                          ),
+                                        ),
                                         onPressed: _loadInvites,
-                                        child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                                        child: const Text(
+                                          'Retry',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -128,13 +172,17 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                       Container(
                                         padding: const EdgeInsets.all(24),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF10B981).withOpacity(0.1),
+                                          color: const Color(
+                                            0xFF10B981,
+                                          ).withOpacity(0.1),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Icon(
                                           Icons.favorite_outline_rounded,
                                           size: 64,
-                                          color: const Color(0xFF10B981).withOpacity(0.5),
+                                          color: const Color(
+                                            0xFF10B981,
+                                          ).withOpacity(0.5),
                                         ),
                                       ),
                                       const SizedBox(height: 24),
@@ -143,7 +191,10 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                         style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.w700,
-                                          color: isDark ? Colors.white : const Color(0xFF064E3B),
+                                          color:
+                                              isDark
+                                                  ? Colors.white
+                                                  : const Color(0xFF064E3B),
                                         ),
                                       ),
                                       const SizedBox(height: 8),
@@ -151,7 +202,10 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                         'Keep discovering to find your perfect match!',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: isDark ? Colors.white38 : Colors.black38,
+                                          color:
+                                              isDark
+                                                  ? Colors.white38
+                                                  : Colors.black38,
                                         ),
                                       ),
                                     ],
@@ -160,18 +214,36 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                               )
                             else
                               SliverPadding(
-                                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  0,
+                                  20,
+                                  24,
+                                ),
                                 sliver: SliverToBoxAdapter(
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.white.withOpacity(0.8),
+                                      color:
+                                          isDark
+                                              ? Colors.white.withOpacity(0.05)
+                                              : Colors.white.withOpacity(0.8),
                                       borderRadius: BorderRadius.circular(28),
                                       border: Border.all(
-                                        color: isDark ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.5),
+                                        color:
+                                            isDark
+                                                ? Colors.white.withOpacity(0.1)
+                                                : Colors.white.withOpacity(0.5),
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: isDark ? Colors.black.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.05),
+                                          color:
+                                              isDark
+                                                  ? Colors.black.withOpacity(
+                                                    0.2,
+                                                  )
+                                                  : const Color(
+                                                    0xFF10B981,
+                                                  ).withOpacity(0.05),
                                           blurRadius: 30,
                                           offset: const Offset(0, 10),
                                         ),
@@ -179,16 +251,22 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                     ),
                                     clipBehavior: Clip.antiAlias,
                                     child: Column(
-                                      children: List.generate(_invites.length, (index) {
+                                      children: List.generate(_invites.length, (
+                                        index,
+                                      ) {
                                         final inv = _invites[index];
-                                        final isLast = index == _invites.length - 1;
-                                        
+                                        final isLast =
+                                            index == _invites.length - 1;
+
                                         return Column(
                                           children: [
                                             _MatchCard(
                                               user: inv.user,
-                                              onViewProfile: () => _openProfile(inv.user),
-                                              onChat: () => _startChat(inv.user),
+                                              status: inv.friendStatus,
+                                              onViewProfile:
+                                                  () => _openProfile(inv.user),
+                                              onChat:
+                                                  () => _startChat(inv.user),
                                               isDark: isDark,
                                             ),
                                             if (!isLast)
@@ -196,7 +274,11 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                                 height: 1,
                                                 indent: 20,
                                                 endIndent: 20,
-                                                color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade100,
+                                                color:
+                                                    isDark
+                                                        ? Colors.white
+                                                            .withOpacity(0.06)
+                                                        : Colors.grey.shade100,
                                               ),
                                           ],
                                         );
@@ -263,13 +345,15 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
 
 class _MatchCard extends StatelessWidget {
   final UserModel user;
+  final String status;
   final VoidCallback onViewProfile;
   final VoidCallback onChat;
   final bool isDark;
 
   const _MatchCard({
-    required this.user, 
-    required this.onViewProfile, 
+    required this.user,
+    required this.status,
+    required this.onViewProfile,
     required this.onChat,
     required this.isDark,
   });
@@ -279,7 +363,31 @@ class _MatchCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onViewProfile,
+        onTap:
+            status == 'pending'
+                ? () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'You cannot view profile of pending matches.',
+                      ),
+                      backgroundColor:
+                          isDark ? Colors.grey[800] : Colors.grey[200],
+                      behavior: SnackBarBehavior.floating,
+                      margin: const EdgeInsets.all(20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      action: SnackBarAction(
+                        label: 'OK',
+                        textColor: const Color(0xFF10B981),
+                        onPressed: () {},
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+                : onViewProfile,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Row(
@@ -289,26 +397,40 @@ class _MatchCard extends StatelessWidget {
                 padding: const EdgeInsets.all(2.5),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                  gradient: LinearGradient(
+                    colors:
+                        status == 'pending'
+                            ? [Colors.orange.shade300, Colors.orange.shade200]
+                            : [
+                              const Color(0xFF10B981),
+                              const Color(0xFF34D399),
+                            ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 28,
-                  backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                  backgroundImage: user.media.isNotEmpty ? NetworkImage(user.media) : null,
-                  child: user.media.isEmpty 
-                      ? Text(
-                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: const Color(0xFF10B981),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ) 
-                      : null,
+                  backgroundColor:
+                      isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                  backgroundImage:
+                      user.media.isNotEmpty ? NetworkImage(user.media) : null,
+                  child:
+                      user.media.isEmpty
+                          ? Text(
+                            user.name.isNotEmpty
+                                ? user.name[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color:
+                                  status == 'pending'
+                                      ? Colors.orange
+                                      : const Color(0xFF10B981),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                          : null,
                 ),
               ),
               const SizedBox(width: 16),
@@ -316,13 +438,46 @@ class _MatchCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      user.name, 
-                      style: TextStyle(
-                        fontSize: 18, 
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            user.name,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (status == 'pending')
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.orange.withOpacity(0.5),
+                              ),
+                            ),
+                            child: Text(
+                              'Pending',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    isDark
+                                        ? Colors.orangeAccent
+                                        : Colors.orange,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -339,17 +494,49 @@ class _MatchCard extends StatelessWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: onChat,
+                  onTap:
+                      status == 'pending'
+                          ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  'You cannot chat with pending matches.',
+                                ),
+                                backgroundColor:
+                                    isDark
+                                        ? Colors.grey[800]
+                                        : Colors.grey[200],
+                                behavior: SnackBarBehavior.floating,
+                                margin: const EdgeInsets.all(20),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                action: SnackBarAction(
+                                  label: 'OK',
+                                  textColor: const Color(0xFF10B981),
+                                  onPressed: () {},
+                                ),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                          : onChat,
                   borderRadius: BorderRadius.circular(50),
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.1),
+                      color:
+                          status == 'pending'
+                              ? Colors.orange.withOpacity(0.1)
+                              : const Color(0xFF10B981).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chat_bubble_rounded,
-                      color: Color(0xFF10B981),
+                      color:
+                          status == 'pending'
+                              ? Colors.orange
+                              : const Color(0xFF10B981),
                       size: 20,
                     ),
                   ),
