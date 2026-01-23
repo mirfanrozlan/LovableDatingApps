@@ -30,7 +30,6 @@ class DiscoverController extends ChangeNotifier {
   String? get gender => _gender;
   int? get minAge => _minAge;
   int? get maxAge => _maxAge;
-  bool get isDiscoveryDarkMode => true; // Replaced during cleanup
 
 
   void updateFilters({

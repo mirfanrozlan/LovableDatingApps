@@ -42,121 +42,126 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
-                  : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF059669)],
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF10B981).withOpacity(0.4),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors:
+                      isDark
+                          ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
+                          : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
                 ),
-                child: const Icon(
-                  Icons.favorite,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                "It's a Match! 🎉",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : const Color(0xFF064E3B),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'You and ${profile.name} liked each other!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isDark ? Colors.white70 : Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF10B981)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Keep Swiping',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : const Color(0xFF10B981),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // Navigate to messages/chat with the matched user
-                        Navigator.pushNamed(context, AppRoutes.messages);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Say Hello!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    "It's a Match! 🎉",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF064E3B),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'You and ${profile.name} liked each other!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF10B981)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Keep Swiping',
+                            style: TextStyle(
+                              color:
+                                  isDark
+                                      ? Colors.white
+                                      : const Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            // Navigate to messages/chat with the matched user
+                            Navigator.pushNamed(context, AppRoutes.messages);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Say Hello!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -242,18 +247,21 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Text( 
+        Text(
           'Discover',
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: isDark ? Colors.white : const Color(0xFF064E3B),
+            color: Theme.of(context).textTheme.titleLarge?.color,
             letterSpacing: -0.5,
           ),
         ),
         Align(
           alignment: Alignment.centerRight,
-          child: _PreferencesIconButton(isDark: isDark, onTap: _openPreferences),
+          child: _PreferencesIconButton(
+            isDark: isDark,
+            onTap: _openPreferences,
+          ),
         ),
       ],
     );
@@ -311,14 +319,20 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.tune_rounded, color: Color(0xFF10B981)),
+                          const Icon(
+                            Icons.tune_rounded,
+                            color: Color(0xFF10B981),
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             'Discovery Preferences',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : const Color(0xFF064E3B),
+                              color:
+                                  isDark
+                                      ? Colors.white
+                                      : const Color(0xFF064E3B),
                             ),
                           ),
                         ],
@@ -330,30 +344,49 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
-                        children: ['Male', 'Female', 'Both'].map((g) {
-                          final isSelected = gender == g;
-                          return ChoiceChip(
-                            label: Text(g),
-                            selected: isSelected,
-                            onSelected: (val) {
-                              if (val) setModalState(() => gender = g);
-                            },
-                            selectedColor: const Color(0xFF10B981).withOpacity(0.15),
-                            backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
-                            labelStyle: TextStyle(
-                              color: isSelected ? const Color(0xFF10B981) : (isDark ? Colors.white70 : Colors.black54),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              fontSize: 14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: isSelected ? const Color(0xFF10B981) : (isDark ? Colors.white12 : Colors.transparent),
-                                width: 1,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            ['Male', 'Female', 'Both'].map((g) {
+                              final isSelected = gender == g;
+                              return ChoiceChip(
+                                label: Text(g),
+                                selected: isSelected,
+                                onSelected: (val) {
+                                  if (val) setModalState(() => gender = g);
+                                },
+                                selectedColor: const Color(
+                                  0xFF10B981,
+                                ).withOpacity(0.15),
+                                backgroundColor:
+                                    isDark
+                                        ? Colors.white.withOpacity(0.05)
+                                        : Colors.grey.shade100,
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected
+                                          ? const Color(0xFF10B981)
+                                          : (isDark
+                                              ? Colors.white70
+                                              : Colors.black54),
+                                  fontWeight:
+                                      isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                  fontSize: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF10B981)
+                                            : (isDark
+                                                ? Colors.white12
+                                                : Colors.transparent),
+                                    width: 1,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
                       const SizedBox(height: 32),
                       Row(
@@ -372,12 +405,18 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           activeTrackColor: const Color(0xFF10B981),
-                          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                          inactiveTrackColor:
+                              isDark ? Colors.white10 : Colors.grey.shade200,
                           thumbColor: const Color(0xFF10B981),
-                          overlayColor: const Color(0xFF10B981).withOpacity(0.2),
+                          overlayColor: const Color(
+                            0xFF10B981,
+                          ).withOpacity(0.2),
                         ),
                         child: RangeSlider(
-                          values: RangeValues(minAge.toDouble(), maxAge.toDouble()),
+                          values: RangeValues(
+                            minAge.toDouble(),
+                            maxAge.toDouble(),
+                          ),
                           min: 18,
                           max: 100,
                           divisions: 82,
@@ -406,7 +445,8 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           activeTrackColor: const Color(0xFF10B981),
-                          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
+                          inactiveTrackColor:
+                              isDark ? Colors.white10 : Colors.grey.shade200,
                           thumbColor: const Color(0xFF10B981),
                         ),
                         child: Slider(
@@ -414,7 +454,8 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                           min: 1,
                           max: 100,
                           divisions: 99,
-                          onChanged: (v) => setModalState(() => distance = v.round()),
+                          onChanged:
+                              (v) => setModalState(() => distance = v.round()),
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -444,8 +485,11 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(ok ? 'Preferences updated' : 'Update failed'),
-                                backgroundColor: ok ? const Color(0xFF10B981) : Colors.red,
+                                content: Text(
+                                  ok ? 'Preferences updated' : 'Update failed',
+                                ),
+                                backgroundColor:
+                                    ok ? const Color(0xFF10B981) : Colors.red,
                               ),
                             );
                             if (ok) {
@@ -462,10 +506,18 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                           backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 56),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           elevation: 0,
                         ),
-                        child: const Text('Save Preferences', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Save Preferences',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),

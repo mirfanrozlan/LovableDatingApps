@@ -9,26 +9,15 @@ class DiscoverDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = ModalRoute.of(context)?.settings.arguments as DiscoverProfileModel?;
-    final isDark = DiscoverController().isDiscoveryDarkMode;
+    final p =
+        ModalRoute.of(context)?.settings.arguments as DiscoverProfileModel?;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       useGradient: false,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF1a1a1a),
-                    const Color(0xFF0a0a0a),
-                  ]
-                : [
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFFDCFCE7),
-                  ],
-          ),
+          color: Theme.of(context).scaffoldBackgroundColor,
         ),
         child: SafeArea(
           child: Center(
@@ -79,7 +68,11 @@ class _Header extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ),
@@ -90,7 +83,7 @@ class _Header extends StatelessWidget {
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: isDark ? Colors.white : const Color(0xFF064E3B),
+            color: Theme.of(context).textTheme.titleLarge?.color,
             letterSpacing: -0.5,
           ),
         ),
@@ -120,13 +113,16 @@ class _ProfileCard extends StatelessWidget {
               children: [
                 (p?.media.isNotEmpty ?? false)
                     ? Image.network(
-                        p!.media,
-                        height: 340,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) =>
-                            Container(color: Colors.grey.shade300, height: 340),
-                      )
+                      p!.media,
+                      height: 340,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (ctx, err, stack) => Container(
+                            color: Colors.grey.shade300,
+                            height: 340,
+                          ),
+                    )
                     : Container(color: Colors.grey.shade300, height: 340),
                 Positioned.fill(
                   child: Container(
@@ -173,7 +169,11 @@ class _ProfileCard extends StatelessWidget {
                               colors: [Color(0xFF10B981), Color(0xFF059669)],
                             ),
                           ),
-                          child: const Icon(Icons.verified, color: Colors.white, size: 18),
+                          child: const Icon(
+                            Icons.verified,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                     ],
                   ),
@@ -188,13 +188,17 @@ class _ProfileCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 18, color: Color(0xFF10B981)),
+                    const Icon(
+                      Icons.location_on,
+                      size: 18,
+                      color: Color(0xFF10B981),
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         '${p?.city ?? ''}, ${p?.country ?? ''}',
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : const Color(0xFF444444),
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -205,14 +209,18 @@ class _ProfileCard extends StatelessWidget {
                 if ((p?.education ?? '').isNotEmpty)
                   Row(
                     children: [
-                      Icon(Icons.school_outlined,
-                          size: 18, color: isDark ? Colors.white70 : const Color(0xFF444444)),
+                      Icon(
+                        Icons.school_outlined,
+                        size: 18,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           p!.education,
                           style: TextStyle(
-                            color: isDark ? Colors.white70 : const Color(0xFF444444),
+                            color:
+                                Theme.of(context).textTheme.bodyMedium?.color,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -226,7 +234,9 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  (p?.description ?? '').isNotEmpty ? p!.description : 'No description available.',
+                  (p?.description ?? '').isNotEmpty
+                      ? p!.description
+                      : 'No description available.',
                   style: TextStyle(
                     height: 1.5,
                     color: isDark ? Colors.white70 : const Color(0xFF444444),
@@ -242,32 +252,40 @@ class _ProfileCard extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: (p?.interests ?? const [])
-                        .map(
-                          (t) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isDark ? Colors.white24 : const Color(0xFFE5E7EB),
+                    children:
+                        (p?.interests ?? const [])
+                            .map(
+                              (t) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).dividerColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Theme.of(context).dividerColor,
+                                  ),
+                                ),
+                                child: Text(
+                                  t,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium?.color,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              t,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : const Color(0xFF1a1a1a),
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                            )
+                            .toList(),
                   ),
                 ],
                 const SizedBox(height: 20),
-                
               ],
             ),
           ),
