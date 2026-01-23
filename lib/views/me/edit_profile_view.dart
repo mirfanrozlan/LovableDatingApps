@@ -7,6 +7,7 @@ import '../../themes/theme.dart';
 import '../../services/moments_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
+import '../../services/malaysia_postcode_service.dart';
 
 class EditProfileView extends StatefulWidget {
   const EditProfileView({super.key});
@@ -15,23 +16,35 @@ class EditProfileView extends StatefulWidget {
   State<EditProfileView> createState() => _EditProfileViewState();
 }
 
-class _EditProfileViewState extends State<EditProfileView> with SingleTickerProviderStateMixin {
+class _EditProfileViewState extends State<EditProfileView>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late AnimationController _animController;
-  
+
   // Controllers
   final _nameController = TextEditingController();
-  final _locationController = TextEditingController();
+  // Location is now handled by dropdowns
   final _occupationController = TextEditingController();
   final _bioController = TextEditingController();
   final _interestsController = TextEditingController();
-  
+
   bool _loading = true;
   bool _saving = false;
   bool _uploadingImage = false;
+  bool _isLoadingPostcodes = true;
+
   UserModel? _user;
   File? _selectedImage;
   String? _currentImageUrl;
+
+  // Malaysia postcode data
+  String? _selectedState;
+  String? _selectedCity;
+  String? _selectedPostcode;
+  List<String> _stateList = [];
+  List<String> _cityList = [];
+  List<String> _postcodeList = [];
+
   final _momentsService = MomentsService();
   final _authService = AuthService();
   final _imagePicker = ImagePicker();
@@ -43,7 +56,55 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _loadProfile();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    await _loadPostcodeData();
+    await _loadProfile();
+  }
+
+  Future<void> _loadPostcodeData() async {
+    await MalaysiaPostcodeService.instance.loadData();
+    if (mounted) {
+      setState(() {
+        _stateList = MalaysiaPostcodeService.instance.getStateNames();
+        _isLoadingPostcodes = false;
+      });
+    }
+  }
+
+  void _onStateChanged(String? state) {
+    setState(() {
+      _selectedState = state;
+      _selectedCity = null;
+      _selectedPostcode = null;
+      _cityList =
+          state != null
+              ? MalaysiaPostcodeService.instance.getCitiesForState(state)
+              : [];
+      _postcodeList = [];
+    });
+  }
+
+  void _onCityChanged(String? city) {
+    setState(() {
+      _selectedCity = city;
+      _selectedPostcode = null;
+      _postcodeList =
+          (_selectedState != null && city != null)
+              ? MalaysiaPostcodeService.instance.getPostcodesForCity(
+                _selectedState!,
+                city,
+              )
+              : [];
+    });
+  }
+
+  void _onPostcodeChanged(String? postcode) {
+    setState(() {
+      _selectedPostcode = postcode;
+    });
   }
 
   Future<void> _loadProfile() async {
@@ -51,39 +112,72 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
       final userId = await _momentsService.getCurrentUserId();
       if (userId != null) {
         final user = await _momentsService.getUserDetails(userId);
-        setState(() {
-          _user = user;
-          _nameController.text = user.name;
-          _locationController.text = '${user.city}, ${user.country}';
-          _occupationController.text = user.education;
-          _bioController.text = user.description;
-          _interestsController.text = user.interests;
-          _currentImageUrl = user.media;
-          _loading = false;
-        });
-        _animController.forward();
+
+        // Populate dropdown lists based on user data
+        final states = MalaysiaPostcodeService.instance.getStateNames();
+        List<String> cities = [];
+        List<String> postcodes = [];
+
+        String? validState;
+        String? validCity;
+        String? validPostcode;
+
+        if (user.state.isNotEmpty && states.contains(user.state)) {
+          validState = user.state;
+          cities = MalaysiaPostcodeService.instance.getCitiesForState(
+            validState,
+          );
+
+          if (user.city.isNotEmpty && cities.contains(user.city)) {
+            validCity = user.city;
+            postcodes = MalaysiaPostcodeService.instance.getPostcodesForCity(
+              validState,
+              validCity,
+            );
+
+            if (user.postcode.isNotEmpty && postcodes.contains(user.postcode)) {
+              validPostcode = user.postcode;
+            }
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _user = user;
+            _nameController.text = user.name;
+            // Set dropdown values
+            _selectedState = validState;
+            _cityList = cities;
+            _selectedCity = validCity;
+            _postcodeList = postcodes;
+            _selectedPostcode = validPostcode;
+
+            _occupationController.text = user.education;
+            _bioController.text = user.description;
+            _interestsController.text = user.interests;
+            _currentImageUrl = user.media;
+            _loading = false;
+          });
+          _animController.forward();
+        }
       }
     } catch (e) {
-      setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading profile: $e')),
-        );
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading profile: $e')));
       }
     }
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _saving = true);
     try {
       final userId = await _momentsService.getCurrentUserId();
       if (userId == null) return;
-
-      final locationParts = _locationController.text.split(',');
-      final city = locationParts[0].trim();
-      final country = locationParts.length > 1 ? locationParts[1].trim() : '';
 
       final success = await _authService.updateProfile(
         userId: userId,
@@ -92,8 +186,11 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
         age: _user?.age ?? 0,
         bio: _bioController.text,
         education: _occupationController.text,
-        city: city,
-        country: country,
+        state: _selectedState ?? '',
+        city: _selectedCity ?? '',
+        postcode: _selectedPostcode ?? '',
+        country:
+            'Malaysia', // Default to Malaysia since we use Malaysia postcode service
         interests: _interestsController.text,
       );
 
@@ -109,9 +206,9 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -122,7 +219,6 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
   void dispose() {
     _animController.dispose();
     _nameController.dispose();
-    _locationController.dispose();
     _occupationController.dispose();
     _bioController.dispose();
     _interestsController.dispose();
@@ -141,17 +237,32 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
-                : [const Color(0xFFF0FDF8), const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+            colors:
+                isDark
+                    ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
+                    : [
+                      const Color(0xFFF0FDF8),
+                      const Color(0xFFECFDF5),
+                      const Color(0xFFD1FAE5),
+                    ],
             stops: isDark ? null : const [0.0, 0.5, 1.0],
           ),
         ),
         child: Stack(
           children: [
             // Decorative elements
-            _buildDecorativeCircle(top: -50, right: -50, color: const Color(0xFF10B981), opacity: isDark ? 0.15 : 0.2),
-            _buildDecorativeCircle(top: 200, left: -80, color: const Color(0xFF34D399), opacity: isDark ? 0.08 : 0.12),
+            _buildDecorativeCircle(
+              top: -50,
+              right: -50,
+              color: const Color(0xFF10B981),
+              opacity: isDark ? 0.15 : 0.2,
+            ),
+            _buildDecorativeCircle(
+              top: 200,
+              left: -80,
+              color: const Color(0xFF34D399),
+              opacity: isDark ? 0.08 : 0.12,
+            ),
 
             Scaffold(
               backgroundColor: Colors.transparent,
@@ -162,106 +273,166 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
                     _buildHeader(isDark),
 
                     Expanded(
-                      child: _loading 
-                        ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
-                        : SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                            child: FadeTransition(
-                              opacity: _animController,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.05),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: _animController,
-                                  curve: Curves.easeOut,
-                                )),
-                                child: Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    children: [
-                                      // Avatar Section
-                                      _buildAvatarSection(isDark),
-                                      const SizedBox(height: 24),
-
-                                      // Form Fields container
-                                      Container(
-                                        padding: const EdgeInsets.all(24),
-                                        decoration: BoxDecoration(
-                                          color: isDark 
-                                              ? Colors.white.withOpacity(0.05)
-                                              : Colors.white.withOpacity(0.8),
-                                          borderRadius: BorderRadius.circular(28),
-                                          border: Border.all(
-                                            color: isDark 
-                                                ? Colors.white.withOpacity(0.1)
-                                                : Colors.white.withOpacity(0.5),
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: isDark 
-                                                  ? Colors.black.withOpacity(0.2)
-                                                  : const Color(0xFF10B981).withOpacity(0.05),
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 8),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            _buildInputField(
-                                              controller: _nameController,
-                                              label: 'Full Name',
-                                              icon: Icons.person_outline_rounded,
-                                              isDark: isDark,
-                                            ),
-                                            const SizedBox(height: 20),
-                                            _buildInputField(
-                                              controller: _locationController,
-                                              label: 'Location (City, Country)',
-                                              icon: Icons.location_on_outlined,
-                                              isDark: isDark,
-                                            ),
-                                            const SizedBox(height: 20),
-                                            _buildInputField(
-                                              controller: _occupationController,
-                                              label: 'Education',
-                                              icon: Icons.school_outlined,
-                                              isDark: isDark,
-                                            ),
-                                            const SizedBox(height: 20),
-                                            _buildInputField(
-                                              controller: _bioController,
-                                              label: 'Bio',
-                                              minLines: 3,
-                                              maxLines: null,
-                                              keyboardType: TextInputType.multiline,
-                                              isDark: isDark,
-                                              required: false,
-                                            ),
-                                            const SizedBox(height: 20),
-                                            _buildInputField(
-                                              controller: _interestsController,
-                                              label: 'Interests (comma separated)',
-                                              icon: Icons.interests_outlined,
-                                              isDark: isDark,
-                                            ),
-                                          ],
-                                        ),
+                      child:
+                          _loading
+                              ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF10B981),
+                                ),
+                              )
+                              : SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  0,
+                                  20,
+                                  24,
+                                ),
+                                child: FadeTransition(
+                                  opacity: _animController,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.05),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: _animController,
+                                        curve: Curves.easeOut,
                                       ),
+                                    ),
+                                    child: Form(
+                                      key: _formKey,
+                                      child: Column(
+                                        children: [
+                                          // Avatar Section
+                                          _buildAvatarSection(isDark),
+                                          const SizedBox(height: 24),
 
-                                      const SizedBox(height: 32),
+                                          // Form Fields container
+                                          Container(
+                                            padding: const EdgeInsets.all(24),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  isDark
+                                                      ? Colors.white
+                                                          .withOpacity(0.05)
+                                                      : Colors.white
+                                                          .withOpacity(0.8),
+                                              borderRadius:
+                                                  BorderRadius.circular(28),
+                                              border: Border.all(
+                                                color:
+                                                    isDark
+                                                        ? Colors.white
+                                                            .withOpacity(0.1)
+                                                        : Colors.white
+                                                            .withOpacity(0.5),
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color:
+                                                      isDark
+                                                          ? Colors.black
+                                                              .withOpacity(0.2)
+                                                          : const Color(
+                                                            0xFF10B981,
+                                                          ).withOpacity(0.05),
+                                                  blurRadius: 20,
+                                                  offset: const Offset(0, 8),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                _buildInputField(
+                                                  controller: _nameController,
+                                                  label: 'Full Name',
+                                                  icon:
+                                                      Icons
+                                                          .person_outline_rounded,
+                                                  isDark: isDark,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                // Location Dropdowns
+                                                _buildDropdown(
+                                                  value: _selectedState,
+                                                  hint: 'Select State',
+                                                  icon: Icons.map_outlined,
+                                                  isDark: isDark,
+                                                  items: _stateList,
+                                                  onChanged: _onStateChanged,
+                                                  isLoading:
+                                                      _isLoadingPostcodes,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                _buildDropdown(
+                                                  value: _selectedCity,
+                                                  hint: 'Select City',
+                                                  icon:
+                                                      Icons
+                                                          .location_city_outlined,
+                                                  isDark: isDark,
+                                                  items: _cityList,
+                                                  onChanged: _onCityChanged,
+                                                  enabled:
+                                                      _selectedState != null,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                _buildDropdown(
+                                                  value: _selectedPostcode,
+                                                  hint: 'Select Postcode',
+                                                  icon: Icons.pin_outlined,
+                                                  isDark: isDark,
+                                                  items: _postcodeList,
+                                                  onChanged: _onPostcodeChanged,
+                                                  enabled:
+                                                      _selectedCity != null,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                _buildInputField(
+                                                  controller:
+                                                      _occupationController,
+                                                  label: 'Education',
+                                                  icon: Icons.school_outlined,
+                                                  isDark: isDark,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                _buildInputField(
+                                                  controller: _bioController,
+                                                  label: 'Bio',
+                                                  minLines: 3,
+                                                  maxLines: null,
+                                                  keyboardType:
+                                                      TextInputType.multiline,
+                                                  isDark: isDark,
+                                                  required: false,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                _buildInputField(
+                                                  controller:
+                                                      _interestsController,
+                                                  label:
+                                                      'Interests (comma separated)',
+                                                  icon:
+                                                      Icons.interests_outlined,
+                                                  isDark: isDark,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
 
-                                      // Save Button
-                                      _buildSaveButton(isDark),
-                                    ],
+                                          const SizedBox(height: 32),
+
+                                          // Save Button
+                                          _buildSaveButton(isDark),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
                     ),
                   ],
                 ),
@@ -320,7 +491,11 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF34D399), Color(0xFF6EE7B7)],
+                colors: [
+                  Color(0xFF10B981),
+                  Color(0xFF34D399),
+                  Color(0xFF6EE7B7),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -342,17 +517,24 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
                 radius: 54,
                 backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
                 backgroundImage: imageProvider,
-                child: _uploadingImage
-                    ? const CircularProgressIndicator(
-                        color: Color(0xFF10B981),
-                        strokeWidth: 3,
-                      )
-                    : (imageProvider == null
-                        ? Text(
-                            _user?.name.isNotEmpty == true ? _user!.name[0].toUpperCase() : '?',
-                            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
-                          )
-                        : null),
+                child:
+                    _uploadingImage
+                        ? const CircularProgressIndicator(
+                          color: Color(0xFF10B981),
+                          strokeWidth: 3,
+                        )
+                        : (imageProvider == null
+                            ? Text(
+                              _user?.name.isNotEmpty == true
+                                  ? _user!.name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF10B981),
+                              ),
+                            )
+                            : null),
               ),
             ),
           ),
@@ -364,14 +546,26 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _uploadingImage ? Colors.grey : const Color(0xFF10B981),
+                  color:
+                      _uploadingImage ? Colors.grey : const Color(0xFF10B981),
                   shape: BoxShape.circle,
-                  border: Border.all(color: isDark ? const Color(0xFF1A1A1A) : Colors.white, width: 3),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                    width: 3,
+                  ),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 4)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
-                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -382,65 +576,66 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
 
   void _showImagePickerOptions() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                'Change Profile Picture',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      builder:
+          (context) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildImagePickerOption(
-                    icon: Icons.camera_alt_rounded,
-                    label: 'Camera',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImage(ImageSource.camera);
-                    },
-                    isDark: isDark,
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  _buildImagePickerOption(
-                    icon: Icons.photo_library_rounded,
-                    label: 'Gallery',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImage(ImageSource.gallery);
-                    },
-                    isDark: isDark,
+                  Text(
+                    'Change Profile Picture',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildImagePickerOption(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Camera',
+                        onTap: () {
+                          Navigator.pop(context);
+                          _pickImage(ImageSource.camera);
+                        },
+                        isDark: isDark,
+                      ),
+                      _buildImagePickerOption(
+                        icon: Icons.photo_library_rounded,
+                        label: 'Gallery',
+                        onTap: () {
+                          Navigator.pop(context);
+                          _pickImage(ImageSource.gallery);
+                        },
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -456,10 +651,14 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF8),
+          color:
+              isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF8),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? Colors.white12 : const Color(0xFF10B981).withOpacity(0.2),
+            color:
+                isDark
+                    ? Colors.white12
+                    : const Color(0xFF10B981).withOpacity(0.2),
           ),
         ),
         child: Column(
@@ -505,8 +704,11 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
         // Upload the image
         final userId = await _momentsService.getCurrentUserId();
         if (userId != null) {
-          final result = await _authService.uploadProfilePicture(userId, pickedFile.path);
-          
+          final result = await _authService.uploadProfilePicture(
+            userId,
+            pickedFile.path,
+          );
+
           if (result != null && mounted) {
             setState(() {
               _uploadingImage = false;
@@ -553,6 +755,99 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
     }
   }
 
+  Widget _buildDropdown({
+    required String? value,
+    required String hint,
+    required IconData icon,
+    required bool isDark,
+    required List<String> items,
+    required Function(String?) onChanged,
+    bool isLoading = false,
+    bool enabled = true,
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(
+              icon,
+              color:
+                  isDark
+                      ? Colors.white.withOpacity(0.5)
+                      : const Color(0xFF999999),
+              size: 22,
+            ),
+          ),
+          Expanded(
+            child:
+                isLoading
+                    ? Text(
+                      'Loading...',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color:
+                            isDark
+                                ? Colors.white.withOpacity(0.3)
+                                : const Color(0xFFCCCCCC),
+                      ),
+                    )
+                    : DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: value,
+                        hint: Text(
+                          hint,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color:
+                                isDark
+                                    ? Colors.white.withOpacity(0.3)
+                                    : const Color(0xFFCCCCCC),
+                          ),
+                        ),
+                        isExpanded: true,
+                        icon: Icon(
+                          Icons.keyboard_arrow_down,
+                          color:
+                              isDark
+                                  ? Colors.white.withOpacity(0.5)
+                                  : const Color(0xFF999999),
+                        ),
+                        dropdownColor:
+                            isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF1a1a1a),
+                        ),
+                        onChanged: enabled ? onChanged : null,
+                        items:
+                            items.map((item) {
+                              return DropdownMenuItem<String>(
+                                value: item,
+                                child: Text(item),
+                              );
+                            }).toList(),
+                      ),
+                    ),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
 
   Widget _buildInputField({
     required TextEditingController controller,
@@ -588,18 +883,32 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
             fontSize: 15,
           ),
           decoration: InputDecoration(
-            prefixIcon: icon != null ? Icon(icon, color: const Color(0xFF10B981), size: 20) : null,
+            prefixIcon:
+                icon != null
+                    ? Icon(icon, color: const Color(0xFF10B981), size: 20)
+                    : null,
             alignLabelWithHint: true,
             filled: true,
-            fillColor: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF0FDF8).withOpacity(0.5),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            fillColor:
+                isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : const Color(0xFFF0FDF8).withOpacity(0.5),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+              borderSide: BorderSide(
+                color: isDark ? Colors.white12 : Colors.grey.shade200,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF10B981),
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -610,9 +919,13 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
               borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
           ),
-          validator: required 
-            ? (v) => v?.trim().isEmpty == true ? 'This field is required' : null
-            : null,
+          validator:
+              required
+                  ? (v) =>
+                      v?.trim().isEmpty == true
+                          ? 'This field is required'
+                          : null
+                  : null,
         ),
       ],
     );
@@ -641,21 +954,25 @@ class _EditProfileViewState extends State<EditProfileView> with SingleTickerProv
           onTap: _saving ? null : _saveProfile,
           borderRadius: BorderRadius.circular(16),
           child: Center(
-            child: _saving
-                ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                : const Text(
-                    'Save Changes',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
+            child:
+                _saving
+                    ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                    : const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
           ),
         ),
       ),
