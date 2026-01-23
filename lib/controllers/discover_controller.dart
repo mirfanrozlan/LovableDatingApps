@@ -17,32 +17,22 @@ class DiscoverController extends ChangeNotifier {
   final Set<int> _seenIds = {};
 
   // Filters
-  int? _distance;
   String? _gender;
   int? _minAge;
   int? _maxAge;
 
-
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
-  
-  int? get distance => _distance;
+
   String? get gender => _gender;
   int? get minAge => _minAge;
   int? get maxAge => _maxAge;
 
-
-  void updateFilters({
-    int? distance,
-    String? gender,
-    int? minAge,
-    int? maxAge,
-  }) {
-    _distance = distance;
+  void updateFilters({String? gender, int? minAge, int? maxAge}) {
     _gender = gender;
     _minAge = minAge;
     _maxAge = maxAge;
-    
+
     // Reset pagination and reload
     _page = 1;
     _profiles = [];
@@ -58,11 +48,12 @@ class DiscoverController extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
-    print('Discover: loading page=$_page limit=$_limit filters=(dist:$_distance, gender:$_gender, age:$_minAge-$_maxAge)');
+    print(
+      'Discover: loading page=$_page limit=$_limit filters=(gender:$_gender, age:$_minAge-$_maxAge)',
+    );
     final newProfiles = await _service.getRandomPeople(
-      page: _page, 
+      page: _page,
       limit: _limit,
-      distance: _distance,
       gender: _gender,
       minAge: _minAge,
       maxAge: _maxAge,
@@ -79,7 +70,9 @@ class DiscoverController extends ChangeNotifier {
         _profiles.addAll(deduped);
         _page++;
         _hasMore = true;
-        print('Discover: added=${deduped.length} total=${_profiles.length} nextPage=$_page');
+        print(
+          'Discover: added=${deduped.length} total=${_profiles.length} nextPage=$_page',
+        );
       } else {
         // All were duplicates: advance page and attempt again next time
         _page++;
@@ -98,7 +91,9 @@ class DiscoverController extends ChangeNotifier {
     _profiles.remove(p);
     notifyListeners();
     _swipeCount++;
-    print('Discover: removed id=${p.id} swipeCount=$_swipeCount deck=${_profiles.length}');
+    print(
+      'Discover: removed id=${p.id} swipeCount=$_swipeCount deck=${_profiles.length}',
+    );
     final shouldPrefetchOnSwipe = _swipeCount % 3 == 0;
     final isDeckLow = _profiles.length <= 2;
     if (shouldPrefetchOnSwipe && _hasMore) {
@@ -113,7 +108,9 @@ class DiscoverController extends ChangeNotifier {
       loadProfiles();
     } else if (isDeckLow && !_loading) {
       // Keep deck healthy even when not hitting 3rd swipe
-      print('Discover: deck low, prefetching to keep deck healthy (page=$_page)');
+      print(
+        'Discover: deck low, prefetching to keep deck healthy (page=$_page)',
+      );
       loadProfiles();
     }
   }
@@ -124,13 +121,15 @@ class DiscoverController extends ChangeNotifier {
   /// Like a profile - sends an invite or accepts a pending invite if the other user already liked us.
   Future<void> like(DiscoverProfileModel p) async {
     print('Discover: liking user ${p.id} (${p.name})');
-    
+
     // First check if this user already sent us an invite (they liked us first)
     final pendingInviteId = await _service.checkPendingInvite(p.id);
-    
+
     if (pendingInviteId != null) {
       // They already liked us! Accept the invite to create a match
-      print('Discover: found pending invite $pendingInviteId from user ${p.id}, accepting...');
+      print(
+        'Discover: found pending invite $pendingInviteId from user ${p.id}, accepting...',
+      );
       final result = await _service.respondInvite(pendingInviteId, 'accepted');
       if (result['success'] == true) {
         print('Discover: match created with ${p.name}!');
@@ -151,7 +150,7 @@ class DiscoverController extends ChangeNotifier {
         }
       }
     }
-    
+
     removeProfile(p);
   }
 
@@ -161,4 +160,3 @@ class DiscoverController extends ChangeNotifier {
     removeProfile(p);
   }
 }
-

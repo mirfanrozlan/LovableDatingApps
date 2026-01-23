@@ -96,7 +96,6 @@ class DiscoverService {
   Future<List<DiscoverProfileModel>> getRandomPeople({
     int page = 1,
     int limit = 5,
-    int? distance,
     String? gender,
     int? minAge,
     int? maxAge,
@@ -105,7 +104,6 @@ class DiscoverService {
       final token = await const FlutterSecureStorage().read(key: 'auth_token');
       final queryParams = {'page': page.toString(), 'limit': limit.toString()};
 
-      if (distance != null) queryParams['distance'] = distance.toString();
       if (gender != null) queryParams['gender'] = gender;
       if (minAge != null) queryParams['minAge'] = minAge.toString();
       if (maxAge != null) queryParams['maxAge'] = maxAge.toString();

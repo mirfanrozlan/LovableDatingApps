@@ -174,13 +174,11 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
         String? gender = prefs['pref_gender']?.toString();
         int? minAge = int.tryParse(prefs['pref_age_min']?.toString() ?? '');
         int? maxAge = int.tryParse(prefs['pref_age_max']?.toString() ?? '');
-        int? distance = int.tryParse(prefs['pref_location']?.toString() ?? '');
 
         _controller.updateFilters(
           gender: gender,
           minAge: minAge,
           maxAge: maxAge,
-          distance: distance,
         );
         return;
       }
@@ -271,22 +269,12 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     final ms = MomentsService();
     final userId = await ms.getCurrentUserId();
     if (userId == null) return;
-    final prefs = await AuthService().getPreferences(userId);
-    String gender = (prefs?['pref_gender'] ?? 'Male').toString();
-    int minAge =
-        (prefs?['pref_age_min'] ?? 18) is int
-            ? (prefs?['pref_age_min'] ?? 18)
-            : int.tryParse((prefs?['pref_age_min'] ?? '18').toString()) ?? 18;
-    int maxAge =
-        (prefs?['pref_age_max'] ?? 80) is int
-            ? (prefs?['pref_age_max'] ?? 80)
-            : int.tryParse((prefs?['pref_age_max'] ?? '80').toString()) ?? 80;
-    int distance =
-        (prefs?['pref_location'] ?? 25) is int
-            ? (prefs?['pref_location'] ?? 25)
-            : int.tryParse((prefs?['pref_location'] ?? '25').toString()) ?? 25;
 
-    if (!mounted) return;
+    // Local state for modal
+    String gender = _controller.gender ?? 'male';
+    int minAge = _controller.minAge ?? 18;
+    int maxAge = _controller.maxAge ?? 80;
+
     final isDarkGlobal = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -428,36 +416,6 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Maximum Distance', style: labelStyle),
-                          Text(
-                            '$distance km',
-                            style: const TextStyle(
-                              color: Color(0xFF10B981),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: const Color(0xFF10B981),
-                          inactiveTrackColor:
-                              isDark ? Colors.white10 : Colors.grey.shade200,
-                          thumbColor: const Color(0xFF10B981),
-                        ),
-                        child: Slider(
-                          value: distance.toDouble(),
-                          min: 1,
-                          max: 100,
-                          divisions: 99,
-                          onChanged:
-                              (v) => setModalState(() => distance = v.round()),
-                        ),
-                      ),
                       const SizedBox(height: 40),
                       ElevatedButton(
                         onPressed: () async {
@@ -479,7 +437,6 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                             prefGender: gender,
                             prefAgeMin: minAge,
                             prefAgeMax: maxAge,
-                            prefLocation: distance,
                           );
                           if (mounted) {
                             Navigator.pop(context);
@@ -497,7 +454,6 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                                 gender: gender,
                                 minAge: minAge,
                                 maxAge: maxAge,
-                                distance: distance,
                               );
                             }
                           }
