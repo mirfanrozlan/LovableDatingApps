@@ -20,7 +20,9 @@ class DiscoverService {
         },
       );
 
-      print('DiscoverService.sendInvite: status=${response.statusCode} body=${response.body}');
+      print(
+        'DiscoverService.sendInvite: status=${response.statusCode} body=${response.body}',
+      );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
@@ -39,7 +41,10 @@ class DiscoverService {
 
   /// Responds to an invite (accept/reject).
   /// Used when user B swipes right on user A who already sent an invite.
-  Future<Map<String, dynamic>> respondInvite(int inviteId, String response) async {
+  Future<Map<String, dynamic>> respondInvite(
+    int inviteId,
+    String response,
+  ) async {
     try {
       final token = await const FlutterSecureStorage().read(key: 'auth_token');
       final httpResponse = await http.post(
@@ -51,7 +56,9 @@ class DiscoverService {
         },
       );
 
-      print('DiscoverService.respondInvite: status=${httpResponse.statusCode} body=${httpResponse.body}');
+      print(
+        'DiscoverService.respondInvite: status=${httpResponse.statusCode} body=${httpResponse.body}',
+      );
       if (httpResponse.statusCode == 200) {
         final data = jsonDecode(httpResponse.body);
         return {
@@ -63,33 +70,6 @@ class DiscoverService {
     } catch (e) {
       print('DiscoverService.respondInvite error: $e');
       return {'success': false, 'message': 'Error: $e'};
-    }
-  }
-
-  /// Checks if there's a pending invite from a specific user.
-  /// Returns the invite_id if found, null otherwise.
-  Future<int?> checkPendingInvite(int fromUserId) async {
-    try {
-      final token = await const FlutterSecureStorage().read(key: 'auth_token');
-      final response = await http.get(
-        Uri.https(_baseUrl, '/api/checkInvite/$fromUserId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-      );
-
-      print('DiscoverService.checkPendingInvite: status=${response.statusCode} body=${response.body}');
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['has_invite'] == true) {
-          return data['invite_id'];
-        }
-      }
-      return null;
-    } catch (e) {
-      print('DiscoverService.checkPendingInvite error: $e');
-      return null;
     }
   }
 

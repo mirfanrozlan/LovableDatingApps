@@ -33,6 +33,7 @@ class MessagesService {
       );
 
       if (response.statusCode == 200) {
+        print('MessagesService.getInvites: ${response.body}');
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => ChatInviteModel.fromJson(json)).toList();
       }
