@@ -198,11 +198,11 @@ class DiscoverController extends ChangeNotifier {
     if (newProfiles.isNotEmpty) {
       final deduped = <DiscoverProfileModel>[];
       for (final p in newProfiles) {
-        // If in Nearby Mode, we trust the API to return sorted nearby users and skip the manual distance filter
-        // so it purely relies on user device location.
+        // If in Nearby Mode, we trust the API to return sorted nearby users
+        // But we still apply the distance filter if set by the user.
         // Otherwise (Random Mode), we apply the distance filter if set.
         final shouldInclude =
-            _useLocation || (_maxDistance >= 500 || p.distance <= _maxDistance);
+            (_maxDistance >= 500 || p.distance <= _maxDistance);
 
         if (shouldInclude) {
           if (_seenIds.add(p.id)) {

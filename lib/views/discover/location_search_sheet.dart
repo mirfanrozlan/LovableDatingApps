@@ -28,10 +28,12 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
   String _address = 'Kuala Lumpur, Malaysia';
   bool _loading = false;
   Timer? _debounce;
+  double _radius = 100; // km
 
   @override
   void initState() {
     super.initState();
+    _radius = _controller.maxDistance.toDouble();
     if (_controller.hasCustomLocation) {
       _center = LatLng(_controller.customLat!, _controller.customLng!);
       if (_controller.customLocationName != null) {
@@ -326,6 +328,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
   }
 
   void _confirmLocation() {
+    _controller.updateFilters(maxDistance: _radius.round());
     _controller.setCustomLocation(
       _center.latitude,
       _center.longitude,
@@ -407,6 +410,18 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                         : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 userAgentPackageName: 'com.lovable.dating',
                 subdomains: const ['a', 'b', 'c', 'd'],
+              ),
+              CircleLayer(
+                circles: [
+                  CircleMarker(
+                    point: _center,
+                    radius: _radius * 1000, // Convert km to meters
+                    useRadiusInMeter: true,
+                    color: const Color(0xFF10B981).withOpacity(0.1),
+                    borderColor: const Color(0xFF10B981).withOpacity(0.5),
+                    borderStrokeWidth: 1,
+                  ),
+                ],
               ),
             ],
           ),
@@ -593,6 +608,23 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                     ],
                   ),
                   const SizedBox(height: 24),
+                  Text(
+                    'Search Radius: ${_radius.round()} km',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : Colors.grey,
+                    ),
+                  ),
+                  Slider(
+                    value: _radius,
+                    min: 1,
+                    max: 500,
+                    activeColor: const Color(0xFF10B981),
+                    inactiveColor: isDark ? Colors.white10 : Colors.grey[200],
+                    onChanged: (val) => setState(() => _radius = val),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
