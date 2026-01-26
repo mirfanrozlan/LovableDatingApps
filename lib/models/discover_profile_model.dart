@@ -45,13 +45,20 @@ class DiscoverProfileModel {
       education: json['user_education'] ?? '',
       subscription: json['user_subs'] ?? '',
       status: json['user_status'] ?? '',
-      media: (json['user_media'] ?? '').toString().replaceAll('`', '').trim(),
-      interests: (json['user_interest'] ?? '').toString().split(',').where((e) => e.isNotEmpty).toList(),
+      media: (json['user_media'] ?? '').toString().trim(),
+      interests:
+          (json['user_interest'] ?? '')
+              .toString()
+              .split(',')
+              .where((e) => e.isNotEmpty)
+              .toList(),
       state: json['user_state'] ?? '',
       city: json['user_city'] ?? '',
       country: json['user_country'] ?? '',
-      latitude: double.tryParse(json['user_latitude']?.toString() ?? '0') ?? 0.0,
-      longitude: double.tryParse(json['user_longitude']?.toString() ?? '0') ?? 0.0,
+      latitude:
+          double.tryParse(json['user_latitude']?.toString() ?? '0') ?? 0.0,
+      longitude:
+          double.tryParse(json['user_longitude']?.toString() ?? '0') ?? 0.0,
       distance: double.tryParse(json['distance']?.toString() ?? '0') ?? 0.0,
     );
   }
