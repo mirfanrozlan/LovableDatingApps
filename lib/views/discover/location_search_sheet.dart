@@ -60,12 +60,15 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
   Future<LatLng?> _searchWithNominatim(String query) async {
     try {
       final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1',
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&addressdetails=1&limit=1',
       );
       // Must include User-Agent for Nominatim
       final response = await http.get(
         url,
-        headers: {'User-Agent': 'LovableDatingApps/1.0'},
+        headers: {
+          'User-Agent': 'LovableDatingApps/1.0',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -74,10 +77,16 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
           final lat = double.parse(data[0]['lat']);
           final lon = double.parse(data[0]['lon']);
           return LatLng(lat, lon);
+        } else {
+          print('Nominatim search returned no results for "$query"');
         }
+      } else {
+        print(
+          'Nominatim search error: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
-      print('Nominatim search error: $e');
+      print('Nominatim search exception: $e');
     }
     return null;
   }
@@ -178,12 +187,15 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
   Future<String?> _reverseGeocodeWithNominatim(LatLng point) async {
     try {
       final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?lat=${point.latitude}&lon=${point.longitude}&format=json',
+        'https://nominatim.openstreetmap.org/reverse?lat=${point.latitude}&lon=${point.longitude}&format=json&addressdetails=1',
       );
       // Must include User-Agent for Nominatim
       final response = await http.get(
         url,
-        headers: {'User-Agent': 'LovableDatingApps/1.0'},
+        headers: {
+          'User-Agent': 'LovableDatingApps/1.0',
+          'Accept-Language': 'en-US,en;q=0.9', // Request English results
+        },
       );
 
       if (response.statusCode == 200) {
@@ -226,6 +238,8 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
             return parts.join(', ');
           }
         }
+      } else {
+        print('Nominatim error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('Nominatim reverse geocode error: $e');
