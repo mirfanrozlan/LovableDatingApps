@@ -11,6 +11,7 @@ import '../../routes.dart';
 import '../../widgets/moments/moment_list.dart';
 import '../../services/auth_service.dart';
 import '../../services/moments_service.dart';
+import 'location_search_sheet.dart';
 
 class DiscoverCardView extends StatefulWidget {
   const DiscoverCardView({super.key});
@@ -295,13 +296,51 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                     : 'Nearby Mode: OFF',
           ),
         ),
-        Text(
-          'Discover',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            color: Theme.of(context).textTheme.titleLarge?.color,
-            letterSpacing: -0.5,
+        GestureDetector(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => const LocationSearchSheet(),
+            );
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Discover',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              if (_controller.hasCustomLocation)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Color(0xFF10B981),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _controller.customLocationName ?? '',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ),
         Align(

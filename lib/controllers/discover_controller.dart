@@ -24,6 +24,11 @@ class DiscoverController extends ChangeNotifier {
   int _maxDistance = 100; // Default 100km
   bool _useLocation = false;
 
+  // Custom Location (Search)
+  double? _customLat;
+  double? _customLng;
+  String? _customLocationName;
+
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
 
@@ -32,6 +37,26 @@ class DiscoverController extends ChangeNotifier {
   int? get maxAge => _maxAge;
   int get maxDistance => _maxDistance;
   bool get useLocation => _useLocation;
+  String? get customLocationName => _customLocationName;
+  double? get customLat => _customLat;
+  double? get customLng => _customLng;
+  bool get hasCustomLocation => _customLat != null && _customLng != null;
+
+  void setCustomLocation(double lat, double lng, String name) {
+    _customLat = lat;
+    _customLng = lng;
+    _customLocationName = name;
+    _useLocation = true;
+    refresh();
+  }
+
+  void clearCustomLocation() {
+    _customLat = null;
+    _customLng = null;
+    _customLocationName = null;
+    // Don't turn off location mode, just revert to GPS if on
+    if (_useLocation) refresh();
+  }
 
   void updateFilters({
     String? gender,
@@ -121,15 +146,23 @@ class DiscoverController extends ChangeNotifier {
     double? lng;
 
     if (_useLocation) {
-      try {
-        final position = await _determinePosition();
-        if (position != null) {
-          lat = position.latitude;
-          lng = position.longitude;
-          print('Discover: Got user location: $lat, $lng');
+      if (_customLat != null && _customLng != null) {
+        lat = _customLat;
+        lng = _customLng;
+        print(
+          'Discover: Using custom location: $lat, $lng ($_customLocationName)',
+        );
+      } else {
+        try {
+          final position = await _determinePosition();
+          if (position != null) {
+            lat = position.latitude;
+            lng = position.longitude;
+            print('Discover: Got user location: $lat, $lng');
+          }
+        } catch (e) {
+          print('Discover: Error getting location: $e');
         }
-      } catch (e) {
-        print('Discover: Error getting location: $e');
       }
     }
 
