@@ -175,18 +175,78 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
     }
   }
 
+  Future<String?> _reverseGeocodeWithNominatim(LatLng point) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?lat=${point.latitude}&lon=${point.longitude}&format=json',
+      );
+      // Must include User-Agent for Nominatim
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'LovableDatingApps/1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final address = data['address'];
+        if (address != null) {
+          // Construct readable address similar to placemark logic
+          final List<String> parts = [];
+
+          // Try suburb/district
+          if (address['suburb'] != null)
+            parts.add(address['suburb']);
+          else if (address['district'] != null)
+            parts.add(address['district']);
+          else if (address['neighbourhood'] != null)
+            parts.add(address['neighbourhood']);
+
+          // Try city/town
+          if (address['city'] != null)
+            parts.add(address['city']);
+          else if (address['town'] != null)
+            parts.add(address['town']);
+          else if (address['village'] != null)
+            parts.add(address['village']);
+
+          // Try state
+          if (address['state'] != null) parts.add(address['state']);
+
+          // Fallback to display_name if parts are too few
+          if (parts.isEmpty && data['display_name'] != null) {
+            // Take first 2-3 parts of display name for brevity
+            final full = data['display_name'].toString().split(', ');
+            if (full.length > 2) {
+              return full.take(3).join(', ');
+            }
+            return data['display_name'];
+          }
+
+          if (parts.isNotEmpty) {
+            return parts.join(', ');
+          }
+        }
+      }
+    } catch (e) {
+      print('Nominatim reverse geocode error: $e');
+    }
+    return null;
+  }
+
   Future<void> _getAddress(LatLng point, {String? fallbackLabel}) async {
     if (!mounted) return;
     setState(() => _loading = true);
 
+    String? readableAddress;
+
     try {
-      // Try to get address
+      // 1. Try standard Geocoding plugin
       List<Placemark> placemarks = await placemarkFromCoordinates(
         point.latitude,
         point.longitude,
       );
 
-      if (placemarks.isNotEmpty && mounted) {
+      if (placemarks.isNotEmpty) {
         final place = placemarks.first;
         print('Reverse geocode result: $place'); // Debug print
 
@@ -222,28 +282,32 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
           }
         }
 
-        setState(() {
-          _address = parts.join(', ');
-          if (_address.isEmpty) {
-            // Fallback if parts are empty
-            _address =
-                fallbackLabel ??
-                'Lat: ${point.latitude.toStringAsFixed(4)}, Lng: ${point.longitude.toStringAsFixed(4)}';
-          }
-        });
+        if (parts.isNotEmpty) {
+          readableAddress = parts.join(', ');
+        }
       }
     } catch (e) {
-      // Gracefully handle error by showing coordinates
-      print('Error reverse geocoding: $e');
-      if (mounted) {
-        setState(() {
+      print('Standard reverse geocoding failed: $e');
+    }
+
+    // 2. Fallback to Nominatim if standard failed or returned nothing
+    if (readableAddress == null || readableAddress.isEmpty) {
+      print('Attempting Nominatim fallback for reverse geocoding...');
+      readableAddress = await _reverseGeocodeWithNominatim(point);
+    }
+
+    // 3. Update UI
+    if (mounted) {
+      setState(() {
+        if (readableAddress != null && readableAddress.isNotEmpty) {
+          _address = readableAddress!;
+        } else {
           _address =
               fallbackLabel ??
               'Lat: ${point.latitude.toStringAsFixed(4)}, Lng: ${point.longitude.toStringAsFixed(4)}';
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+        }
+      });
+      setState(() => _loading = false);
     }
   }
 
