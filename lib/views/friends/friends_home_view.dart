@@ -433,14 +433,12 @@ class _MatchCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap:
-            (status == 'pending' || status == 'blocked')
+            status == 'blocked'
                 ? () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        status == 'pending'
-                            ? 'Accept the request to view full profile.'
-                            : 'Unblock the user to view full profile.',
+                      content: const Text(
+                        'Unblock the user to view full profile.',
                       ),
                       backgroundColor:
                           isDark ? Colors.grey[800] : Colors.grey[200],
