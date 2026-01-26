@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/discover_profile_model.dart';
 import '../services/discover_service.dart';
 
@@ -21,6 +22,7 @@ class DiscoverController extends ChangeNotifier {
   int? _minAge;
   int? _maxAge;
   int _maxDistance = 100; // Default 100km
+  bool _useLocation = true;
 
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
@@ -29,6 +31,7 @@ class DiscoverController extends ChangeNotifier {
   int? get minAge => _minAge;
   int? get maxAge => _maxAge;
   int get maxDistance => _maxDistance;
+  bool get useLocation => _useLocation;
 
   void updateFilters({
     String? gender,
@@ -36,11 +39,20 @@ class DiscoverController extends ChangeNotifier {
     int? maxAge,
     int? maxDistance,
   }) {
-    _gender = gender;
-    _minAge = minAge;
-    _maxAge = maxAge;
+    if (gender != null) _gender = gender;
+    if (minAge != null) _minAge = minAge;
+    if (maxAge != null) _maxAge = maxAge;
     if (maxDistance != null) _maxDistance = maxDistance;
 
+    refresh();
+  }
+
+  void toggleLocationMode() {
+    _useLocation = !_useLocation;
+    refresh();
+  }
+
+  Future<void> refresh() async {
     // Reset pagination and reload
     _page = 1;
     _profiles = [];
@@ -48,7 +60,40 @@ class DiscoverController extends ChangeNotifier {
     _hasMore = true;
     _swipeCount = 0;
     notifyListeners();
-    loadProfiles();
+    await loadProfiles();
+  }
+
+  Future<Position?> _determinePosition() async {
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      // Test if location services are enabled.
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('Location services are disabled.');
+        return null;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print('Location permissions are denied');
+          return null;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('Location permissions are permanently denied.');
+        return null;
+      }
+
+      return await Geolocator.getCurrentPosition();
+    } catch (e) {
+      print('Error getting location: $e');
+      return null;
+    }
   }
 
   Future<void> loadProfiles() async {
@@ -56,26 +101,56 @@ class DiscoverController extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
+    double? lat;
+    double? lng;
+
+    if (_useLocation) {
+      try {
+        final position = await _determinePosition();
+        if (position != null) {
+          lat = position.latitude;
+          lng = position.longitude;
+          print('Discover: Got user location: $lat, $lng');
+        }
+      } catch (e) {
+        print('Discover: Error getting location: $e');
+      }
+    }
+
     print(
-      'Discover: loading page=$_page limit=$_limit filters=(gender:$_gender, age:$_minAge-$_maxAge, dist:$_maxDistance)',
+      'Discover: loading page=$_page limit=$_limit filters=(gender:$_gender, age:$_minAge-$_maxAge, dist:$_maxDistance, location:$_useLocation)',
     );
-    // Use getUserNearby instead of getRandomPeople
-    final newProfiles = await _service.getUserNearby(
-      page: _page,
-      limit: _limit,
-      gender: _gender,
-      minAge: _minAge,
-      maxAge: _maxAge,
-      // In a real app, we would get the actual location here
-      // For now using defaults in the service
-    );
+
+    List<DiscoverProfileModel> newProfiles;
+
+    if (_useLocation) {
+      // Use getUserNearby
+      newProfiles = await _service.getUserNearby(
+        page: _page,
+        limit: _limit,
+        gender: _gender,
+        minAge: _minAge,
+        maxAge: _maxAge,
+        latitude: lat ?? 3.0839995,
+        longitude: lng ?? 101.7143737,
+      );
+    } else {
+      // Use getRandomPeople
+      newProfiles = await _service.getRandomPeople(
+        page: _page,
+        limit: _limit,
+        gender: _gender,
+        minAge: _minAge,
+        maxAge: _maxAge,
+      );
+    }
 
     print('Discover: received=${newProfiles.length} profiles from API');
     if (newProfiles.isNotEmpty) {
       final deduped = <DiscoverProfileModel>[];
       for (final p in newProfiles) {
-        // Filter by max distance
-        if (p.distance <= _maxDistance) {
+        // Filter by max distance (if maxDistance >= 500, we treat it as unlimited)
+        if (_maxDistance >= 500 || p.distance <= _maxDistance) {
           if (_seenIds.add(p.id)) {
             deduped.add(p);
           }

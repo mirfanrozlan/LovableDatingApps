@@ -51,5 +51,7 @@
   <string>We need microphone access for calls.</string>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>We need photo library access to select a profile photo.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>This app needs access to location when open to find nearby users.</string>
 </dict>
 </plist>

@@ -252,6 +252,46 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     return Stack(
       alignment: Alignment.center,
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            onPressed: () {
+              _controller.toggleLocationMode();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _controller.useLocation
+                        ? 'Nearby Mode ON: Finding people around you...'
+                        : 'Nearby Mode OFF: Finding random people...',
+                  ),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor:
+                      _controller.useLocation
+                          ? const Color(0xFF10B981)
+                          : Colors.grey,
+                ),
+              );
+            },
+            icon: Icon(
+              _controller.useLocation
+                  ? Icons.my_location_rounded
+                  : Icons.location_disabled_rounded,
+              color:
+                  isDark
+                      ? (_controller.useLocation
+                          ? const Color(0xFF10B981)
+                          : Colors.white70)
+                      : (_controller.useLocation
+                          ? const Color(0xFF10B981)
+                          : Colors.black54),
+            ),
+            tooltip:
+                _controller.useLocation
+                    ? 'Nearby Mode: ON'
+                    : 'Nearby Mode: OFF',
+          ),
+        ),
         Text(
           'Discover',
           style: TextStyle(
@@ -430,7 +470,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                         children: [
                           Text('Maximum Distance', style: labelStyle),
                           Text(
-                            '$maxDistance km',
+                            maxDistance >= 500 ? '500km+' : '$maxDistance km',
                             style: const TextStyle(
                               color: Color(0xFF10B981),
                               fontWeight: FontWeight.bold,

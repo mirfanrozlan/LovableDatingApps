@@ -68,7 +68,7 @@ class _PreferencesViewState extends State<PreferencesView> {
                   children: [
                     _buildSectionTitle('Location & Distance', isDark),
                     const SizedBox(height: 8),
-                    _buildValueRow('Maximum distance', '${_maxDistance.round()} km', isDark),
+                    _buildValueRow('Maximum distance', _maxDistance >= 500 ? '500km+' : '${_maxDistance.round()} km', isDark),
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         activeTrackColor: const Color(0xFF10B981),
@@ -78,8 +78,8 @@ class _PreferencesViewState extends State<PreferencesView> {
                       child: Slider(
                         value: _maxDistance,
                         min: 1,
-                        max: 100,
-                        divisions: 99,
+                        max: 500,
+                        divisions: 100,
                         onChanged: (v) => setState(() => _maxDistance = v),
                       ),
                     ),

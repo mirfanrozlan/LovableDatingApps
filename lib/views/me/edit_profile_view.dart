@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../themes/theme.dart';
@@ -32,6 +34,7 @@ class _EditProfileViewState extends State<EditProfileView>
   bool _saving = false;
   bool _uploadingImage = false;
   bool _isLoadingPostcodes = true;
+  bool _gettingLocation = false;
 
   UserModel? _user;
   File? _selectedImage;
@@ -105,6 +108,105 @@ class _EditProfileViewState extends State<EditProfileView>
     setState(() {
       _selectedPostcode = postcode;
     });
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _gettingLocation = true);
+
+    try {
+      // 1. Check permissions
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Location services are disabled.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions are denied';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Location permissions are permanently denied.';
+      }
+
+      // 2. Get current position
+      final position = await Geolocator.getCurrentPosition();
+
+      // 3. Reverse geocoding
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        final postcode = place.postalCode;
+
+        if (postcode != null && postcode.isNotEmpty) {
+          // Try to find by postcode first (most accurate)
+          final result = MalaysiaPostcodeService.instance.findByPostcode(
+            postcode,
+          );
+
+          if (result != null) {
+            _updateLocationFields(result.state, result.city, result.postcode);
+            return;
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Found postcode $postcode but it is not in our database.',
+                  ),
+                ),
+              );
+            }
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Could not determine postcode from location.'),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _gettingLocation = false);
+    }
+  }
+
+  void _updateLocationFields(String state, String city, String postcode) {
+    setState(() {
+      _selectedState = state;
+      _cityList = MalaysiaPostcodeService.instance.getCitiesForState(state);
+
+      _selectedCity = city;
+      _postcodeList = MalaysiaPostcodeService.instance.getPostcodesForCity(
+        state,
+        city,
+      );
+
+      _selectedPostcode = postcode;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Location updated successfully!'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _loadProfile() async {
@@ -355,6 +457,61 @@ class _EditProfileViewState extends State<EditProfileView>
                                                   isDark: isDark,
                                                 ),
                                                 const SizedBox(height: 20),
+
+                                                // Get Location Button
+                                                Align(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  child: TextButton.icon(
+                                                    onPressed:
+                                                        _gettingLocation
+                                                            ? null
+                                                            : _getCurrentLocation,
+                                                    icon:
+                                                        _gettingLocation
+                                                            ? const SizedBox(
+                                                              width: 16,
+                                                              height: 16,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    color: Color(
+                                                                      0xFF10B981,
+                                                                    ),
+                                                                  ),
+                                                            )
+                                                            : const Icon(
+                                                              Icons.my_location,
+                                                              size: 18,
+                                                            ),
+                                                    label: Text(
+                                                      _gettingLocation
+                                                          ? 'Getting location...'
+                                                          : 'Get Current Location',
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          const Color(
+                                                            0xFF10B981,
+                                                          ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4,
+                                                          ),
+                                                      tapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+
                                                 // Location Dropdowns
                                                 _buildDropdown(
                                                   value: _selectedState,
