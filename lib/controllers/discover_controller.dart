@@ -22,7 +22,7 @@ class DiscoverController extends ChangeNotifier {
   int? _minAge;
   int? _maxAge;
   int _maxDistance = 100; // Default 100km
-  bool _useLocation = true;
+  bool _useLocation = false;
 
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
@@ -47,8 +47,22 @@ class DiscoverController extends ChangeNotifier {
     refresh();
   }
 
-  void toggleLocationMode() {
-    _useLocation = !_useLocation;
+  Future<void> toggleLocationMode() async {
+    if (!_useLocation) {
+      // Trying to turn ON
+      final position = await _determinePosition();
+      if (position == null) {
+        // Failed to get location (denied or disabled)
+        // Ensure it stays off
+        _useLocation = false;
+        notifyListeners();
+        return;
+      }
+      _useLocation = true;
+    } else {
+      // Turning OFF
+      _useLocation = false;
+    }
     refresh();
   }
 
@@ -72,6 +86,7 @@ class DiscoverController extends ChangeNotifier {
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         print('Location services are disabled.');
+        await Geolocator.openLocationSettings();
         return null;
       }
 
@@ -86,6 +101,7 @@ class DiscoverController extends ChangeNotifier {
 
       if (permission == LocationPermission.deniedForever) {
         print('Location permissions are permanently denied.');
+        await Geolocator.openAppSettings();
         return null;
       }
 
@@ -149,8 +165,13 @@ class DiscoverController extends ChangeNotifier {
     if (newProfiles.isNotEmpty) {
       final deduped = <DiscoverProfileModel>[];
       for (final p in newProfiles) {
-        // Filter by max distance (if maxDistance >= 500, we treat it as unlimited)
-        if (_maxDistance >= 500 || p.distance <= _maxDistance) {
+        // If in Nearby Mode, we trust the API to return sorted nearby users and skip the manual distance filter
+        // so it purely relies on user device location.
+        // Otherwise (Random Mode), we apply the distance filter if set.
+        final shouldInclude =
+            _useLocation || (_maxDistance >= 500 || p.distance <= _maxDistance);
+
+        if (shouldInclude) {
           if (_seenIds.add(p.id)) {
             deduped.add(p);
           }

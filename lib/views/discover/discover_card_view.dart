@@ -255,8 +255,11 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
         Align(
           alignment: Alignment.centerLeft,
           child: IconButton(
-            onPressed: () {
-              _controller.toggleLocationMode();
+            onPressed: () async {
+              await _controller.toggleLocationMode();
+              if (!context.mounted) return;
+
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(

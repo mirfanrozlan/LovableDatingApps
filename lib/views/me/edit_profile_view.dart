@@ -117,7 +117,8 @@ class _EditProfileViewState extends State<EditProfileView>
       // 1. Check permissions
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw 'Location services are disabled.';
+        await Geolocator.openLocationSettings();
+        throw 'Location services are disabled. Please enable them.';
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -129,7 +130,8 @@ class _EditProfileViewState extends State<EditProfileView>
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw 'Location permissions are permanently denied.';
+        await Geolocator.openAppSettings();
+        throw 'Location permissions are permanently denied. Please enable in settings.';
       }
 
       // 2. Get current position
