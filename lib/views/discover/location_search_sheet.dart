@@ -4,6 +4,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../controllers/discover_controller.dart';
 import '../../routes.dart';
 
@@ -19,6 +21,7 @@ class LocationSearchSheet extends StatefulWidget {
 class _LocationSearchSheetState extends State<LocationSearchSheet> {
   final _controller = DiscoverController();
   final _mapController = MapController();
+  final _searchController = TextEditingController();
 
   // Default to Kuala Lumpur
   LatLng _center = const LatLng(3.1390, 101.6869);
@@ -37,6 +40,13 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
     }
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
     if (hasGesture) {
       _center = camera.center;
@@ -47,11 +57,130 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
     }
   }
 
-  Future<void> _getAddress(LatLng point) async {
+  Future<LatLng?> _searchWithNominatim(String query) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1',
+      );
+      // Must include User-Agent for Nominatim
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'LovableDatingApps/1.0'},
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        if (data.isNotEmpty) {
+          final lat = double.parse(data[0]['lat']);
+          final lon = double.parse(data[0]['lon']);
+          return LatLng(lat, lon);
+        }
+      }
+    } catch (e) {
+      print('Nominatim search error: $e');
+    }
+    return null;
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (query.isEmpty) return;
+    print('Searching for: $query');
+    setState(() => _loading = true);
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
+    try {
+      // 1. Try exact search
+      List<Location> locations = [];
+      try {
+        locations = await locationFromAddress(query);
+      } catch (e) {
+        print('Exact search failed: $e');
+      }
+
+      // 2. If not found and user didn't specify Malaysia, try appending it
+      if (locations.isEmpty && !query.toLowerCase().contains('malaysia')) {
+        try {
+          print('Retrying with ", Malaysia"...');
+          locations = await locationFromAddress('$query, Malaysia');
+        } catch (e) {
+          print('Malaysia append search failed: $e');
+        }
+      }
+
+      // 3. Fallback to Nominatim if Geocoding plugin fails completely
+      if (locations.isEmpty) {
+        print('Geocoding plugin failed, trying Nominatim...');
+        final nomResult = await _searchWithNominatim(query);
+        if (nomResult != null) {
+          // Create a dummy Location object to reuse existing logic or just use point directly
+          // But since existing logic uses `locations` list, let's just handle it here.
+          print(
+            'Location found via Nominatim: ${nomResult.latitude}, ${nomResult.longitude}',
+          );
+          _mapController.move(nomResult, 13);
+          _center = nomResult;
+          await _getAddress(nomResult, fallbackLabel: query);
+          return; // Exit early as we handled it
+        } else {
+          // Try Nominatim with Malaysia appended
+          if (!query.toLowerCase().contains('malaysia')) {
+            print('Nominatim retry with Malaysia...');
+            final nomResult2 = await _searchWithNominatim('$query, Malaysia');
+            if (nomResult2 != null) {
+              print(
+                'Location found via Nominatim (Malaysia): ${nomResult2.latitude}, ${nomResult2.longitude}',
+              );
+              _mapController.move(nomResult2, 13);
+              _center = nomResult2;
+              await _getAddress(nomResult2, fallbackLabel: query);
+              return;
+            }
+          }
+        }
+      }
+
+      if (locations.isNotEmpty && mounted) {
+        final loc = locations.first;
+        print('Location found: ${loc.latitude}, ${loc.longitude}');
+        final point = LatLng(loc.latitude, loc.longitude);
+
+        _mapController.move(point, 13);
+        _center = point;
+
+        // Update address immediately to reflect the search result name (or reverse geocode again)
+        // Pass the query as a fallback in case reverse geocoding fails
+        await _getAddress(point, fallbackLabel: query);
+      } else {
+        print('No location found for "$query"');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Could not find "$query". Try adding the state or country.',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Critical search error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error searching: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _getAddress(LatLng point, {String? fallbackLabel}) async {
     if (!mounted) return;
     setState(() => _loading = true);
 
     try {
+      // Try to get address
       List<Placemark> placemarks = await placemarkFromCoordinates(
         point.latitude,
         point.longitude,
@@ -59,29 +188,60 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
 
       if (placemarks.isNotEmpty && mounted) {
         final place = placemarks.first;
+        print('Reverse geocode result: $place'); // Debug print
+
         // Construct a readable address
-        // e.g. "Mont Kiara, Kuala Lumpur"
-        final List<String> parts = [];
+        // Prioritize: subLocality > locality > subAdministrativeArea > administrativeArea > name > street
+        final Set<String> parts = {}; // Use Set to avoid duplicates
+
         if (place.subLocality != null && place.subLocality!.isNotEmpty) {
           parts.add(place.subLocality!);
         }
         if (place.locality != null && place.locality!.isNotEmpty) {
           parts.add(place.locality!);
         }
+        if (place.subAdministrativeArea != null &&
+            place.subAdministrativeArea!.isNotEmpty) {
+          parts.add(place.subAdministrativeArea!);
+        }
         if (place.administrativeArea != null &&
             place.administrativeArea!.isNotEmpty) {
           parts.add(place.administrativeArea!);
         }
 
+        // Fallback to name or street if city/state is missing
+        if (parts.isEmpty) {
+          if (place.name != null && place.name!.isNotEmpty) {
+            parts.add(place.name!);
+          }
+          if (place.street != null && place.street!.isNotEmpty) {
+            parts.add(place.street!);
+          }
+          if (place.country != null && place.country!.isNotEmpty) {
+            parts.add(place.country!);
+          }
+        }
+
         setState(() {
           _address = parts.join(', ');
           if (_address.isEmpty) {
-            _address = 'Selected Location';
+            // Fallback if parts are empty
+            _address =
+                fallbackLabel ??
+                'Lat: ${point.latitude.toStringAsFixed(4)}, Lng: ${point.longitude.toStringAsFixed(4)}';
           }
         });
       }
     } catch (e) {
+      // Gracefully handle error by showing coordinates
       print('Error reverse geocoding: $e');
+      if (mounted) {
+        setState(() {
+          _address =
+              fallbackLabel ??
+              'Lat: ${point.latitude.toStringAsFixed(4)}, Lng: ${point.longitude.toStringAsFixed(4)}';
+        });
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -194,16 +354,104 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
             ),
           ),
 
-          // Header (Back Button)
+          // Header (Search Bar)
           Positioned(
             top: 16,
             left: 16,
-            child: CircleAvatar(
-              backgroundColor: isDark ? Colors.black54 : Colors.white,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.grey),
-                onPressed: () => Navigator.pop(context),
-              ),
+            right: 16,
+            child: Row(
+              children: [
+                // Back Button
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.arrow_back,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Search Input
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: _searchController,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search city, area...',
+                            hintStyle: TextStyle(
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
+                            suffixIcon: IconButton(
+                              icon:
+                                  _loading
+                                      ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : const Icon(Icons.search),
+                              color: const Color(0xFF10B981),
+                              onPressed:
+                                  () => _performSearch(_searchController.text),
+                            ),
+                          ),
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: _performSearch,
+                        ),
+                        if (_loading)
+                          const ClipRRect(
+                            borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(30),
+                            ),
+                            child: LinearProgressIndicator(
+                              minHeight: 2,
+                              color: Color(0xFF10B981),
+                              backgroundColor: Colors.transparent,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
