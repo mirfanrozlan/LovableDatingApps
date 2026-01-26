@@ -11,6 +11,7 @@ import '../../routes.dart';
 import '../../widgets/moments/moment_list.dart';
 import '../../services/auth_service.dart';
 import '../../services/moments_service.dart';
+import 'location_search_sheet.dart';
 
 class DiscoverCardView extends StatefulWidget {
   const DiscoverCardView({super.key});
@@ -252,6 +253,25 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     return Stack(
       alignment: Alignment.center,
       children: [
+        // Find Nearby Button (Top Left)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const LocationSearchSheet(),
+              );
+            },
+            icon: Icon(
+              Icons.location_on_rounded,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+            tooltip: 'Find Nearby',
+          ),
+        ),
         // Title
         Text(
           'Discover',

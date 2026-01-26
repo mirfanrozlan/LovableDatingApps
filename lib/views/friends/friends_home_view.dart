@@ -8,7 +8,6 @@ import '../../models/messages/chat_invite_model.dart';
 import '../../models/messages/chat_summary_model.dart';
 import '../../routes.dart';
 import '../../models/user_model.dart';
-import '../discover/location_search_sheet.dart';
 
 class FriendsHomeView extends StatefulWidget {
   const FriendsHomeView({super.key});
@@ -368,45 +367,16 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
   Widget _buildHeader(bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Center(
-            child: Text(
-              'Friends',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: isDark ? Colors.white : const Color(0xFF064E3B),
-                letterSpacing: -0.5,
-              ),
-            ),
+      child: Center(
+        child: Text(
+          'Friends',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : const Color(0xFF064E3B),
+            letterSpacing: -0.5,
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: Icon(
-                Icons.search_rounded,
-                color:
-                    isDark
-                        ? Colors.white70
-                        : const Color(0xFF064E3B).withOpacity(0.7),
-                size: 28,
-              ),
-              tooltip: 'Find Friends Nearby',
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder:
-                      (context) =>
-                          const LocationSearchSheet(navigateToDiscover: true),
-                );
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
