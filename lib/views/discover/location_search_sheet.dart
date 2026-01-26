@@ -51,7 +51,9 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
 
   void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
     if (hasGesture) {
-      _center = camera.center;
+      setState(() {
+        _center = camera.center;
+      });
       _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 800), () {
         _getAddress(_center);
