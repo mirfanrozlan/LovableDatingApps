@@ -231,16 +231,16 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
 
           // Fallback to display_name if parts are too few
           if (parts.isEmpty && data['display_name'] != null) {
-            // Take first 2-3 parts of display name for brevity
+            // Take first 2 parts of display name for brevity
             final full = data['display_name'].toString().split(', ');
             if (full.length > 2) {
-              return full.take(3).join(', ');
+              return full.take(2).join(', ');
             }
             return data['display_name'];
           }
 
           if (parts.isNotEmpty) {
-            return parts.join(', ');
+            return parts.take(2).join(', ');
           }
         }
       } else {
@@ -302,7 +302,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
         }
 
         if (parts.isNotEmpty) {
-          readableAddress = parts.join(', ');
+          readableAddress = parts.take(2).join(', ');
         }
       }
     } catch (e) {
@@ -431,19 +431,18 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
 
           // Center Pin
           Center(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 40,
-              ), // Offset for pin point
-              child: Icon(
-                Icons.location_on_rounded,
-                size: 50,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
                 color: const Color(0xFF10B981),
-                shadows: [
-                  Shadow(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
                     color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -534,7 +533,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: const BorderRadius.vertical(
@@ -555,20 +554,20 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                   Text(
                     'Select Location',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white54 : Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
                         Icons.place_rounded,
                         color: const Color(0xFF10B981),
-                        size: 24,
+                        size: 20,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         child:
                             _loading
@@ -576,45 +575,48 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                                 : Text(
                                   _address,
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color:
                                         isDark ? Colors.white : Colors.black87,
                                   ),
-                                  maxLines: 2,
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   Text(
                     'Search Radius: ${_radius.round()} km',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white54 : Colors.grey,
                     ),
                   ),
-                  Slider(
-                    value: _radius,
-                    min: 1,
-                    max: 100,
-                    activeColor: const Color(0xFF10B981),
-                    inactiveColor: isDark ? Colors.white10 : Colors.grey[200],
-                    onChanged: (val) => setState(() => _radius = val),
+                  SizedBox(
+                    height: 32,
+                    child: Slider(
+                      value: _radius,
+                      min: 1,
+                      max: 100,
+                      activeColor: const Color(0xFF10B981),
+                      inactiveColor: isDark ? Colors.white10 : Colors.grey[200],
+                      onChanged: (val) => setState(() => _radius = val),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _useCurrentLocation,
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             side: const BorderSide(color: Color(0xFF10B981)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: const Text(
@@ -626,15 +628,15 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _confirmLocation,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF10B981),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             elevation: 0,
                           ),
