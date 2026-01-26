@@ -45,7 +45,7 @@ class DiscoverProfileModel {
       education: json['user_education'] ?? '',
       subscription: json['user_subs'] ?? '',
       status: json['user_status'] ?? '',
-      media: (json['user_media'] ?? '').toString().trim(),
+      media: (json['user_media'] ?? '').toString().replaceAll('`', '').trim(),
       interests: (json['user_interest'] ?? '').toString().split(',').where((e) => e.isNotEmpty).toList(),
       state: json['user_state'] ?? '',
       city: json['user_city'] ?? '',

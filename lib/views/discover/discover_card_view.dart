@@ -172,6 +172,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
       final prefs = await AuthService().getPreferences(userId);
       if (mounted && prefs != null) {
         String? gender = prefs['pref_gender']?.toString();
+        if (gender == 'Both' || gender == null) gender = 'Female';
         int? minAge = int.tryParse(prefs['pref_age_min']?.toString() ?? '');
         int? maxAge = int.tryParse(prefs['pref_age_max']?.toString() ?? '');
         int? maxDistance = int.tryParse(
@@ -252,6 +253,13 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     return Stack(
       alignment: Alignment.center,
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _NearbyIconButton(
+            isDark: isDark,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.nearby),
+          ),
+        ),
         Text(
           'Discover',
           style: TextStyle(
@@ -278,7 +286,11 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
     if (userId == null) return;
 
     // Local state for modal
-    String gender = _controller.gender ?? 'male';
+    String gender = _controller.gender ?? 'Female';
+    if (gender == 'Both') gender = 'Female';
+    if (gender == 'male') gender = 'Male';
+    if (gender == 'female') gender = 'Female';
+
     int minAge = _controller.minAge ?? 18;
     int maxAge = _controller.maxAge ?? 80;
     int maxDistance = _controller.maxDistance;
@@ -341,7 +353,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                       Wrap(
                         spacing: 12,
                         children:
-                            ['Male', 'Female', 'Both'].map((g) {
+                            ['Male', 'Female'].map((g) {
                               final isSelected = gender == g;
                               return ChoiceChip(
                                 label: Text(g),
@@ -570,6 +582,28 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NearbyIconButton extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onTap;
+  const _NearbyIconButton({required this.isDark, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(Icons.near_me_rounded, color: Color(0xFF10B981)),
+        ),
       ),
     );
   }

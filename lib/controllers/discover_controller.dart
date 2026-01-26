@@ -17,7 +17,7 @@ class DiscoverController extends ChangeNotifier {
   final Set<int> _seenIds = {};
 
   // Filters
-  String? _gender;
+  String? _gender = 'Female';
   int? _minAge;
   int? _maxAge;
   int _maxDistance = 100; // Default 100km

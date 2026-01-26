@@ -12,6 +12,7 @@ import 'views/messages/video_call_view.dart';
 import 'views/messages/incoming_call_view.dart';
 import 'views/discover/discover_card_view.dart';
 import 'views/discover/discover_detail_view.dart';
+import 'views/discover/nearby_users_view.dart';
 import 'views/friends/friends_home_view.dart';
 import 'views/moments/moments_view.dart';
 import 'views/me/me_view.dart';
@@ -34,6 +35,7 @@ class AppRoutes {
   static const incomingCall = '/incoming-call';
   static const discover = '/discover';
   static const discoverDetail = '/discover-detail';
+  static const nearby = '/nearby';
   static const friends = '/friends';
   static const moments = '/moments';
   static const me = '/me';
@@ -59,6 +61,7 @@ class AppRoutes {
     incomingCall: (_) => const IncomingCallView(),
     discover: (_) => DiscoverCardView(),
     discoverDetail: (_) => const DiscoverDetailView(),
+    nearby: (_) => const NearbyUsersView(),
     friends: (_) => const FriendsHomeView(),
     moments: (_) => MomentsView(),
     me: (_) => const MeView(),

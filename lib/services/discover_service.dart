@@ -86,7 +86,7 @@ class DiscoverService {
       final token = await const FlutterSecureStorage().read(key: 'auth_token');
       final queryParams = {'page': page.toString(), 'limit': limit.toString()};
 
-      if (gender != null) queryParams['gender'] = gender;
+      if (gender != null) queryParams['gender'] = gender.toLowerCase();
       if (minAge != null) queryParams['minAge'] = minAge.toString();
       if (maxAge != null) queryParams['maxAge'] = maxAge.toString();
 
