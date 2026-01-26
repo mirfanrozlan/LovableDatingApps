@@ -34,6 +34,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
   void initState() {
     super.initState();
     _radius = _controller.maxDistance.toDouble();
+    if (_radius > 100) _radius = 100;
     if (_controller.hasCustomLocation) {
       _center = LatLng(_controller.customLat!, _controller.customLng!);
       if (_controller.customLocationName != null) {
@@ -456,29 +457,6 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
             right: 16,
             child: Row(
               children: [
-                // Back Button
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.arrow_back,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 // Search Input
                 Expanded(
                   child: Container(
@@ -621,7 +599,7 @@ class _LocationSearchSheetState extends State<LocationSearchSheet> {
                   Slider(
                     value: _radius,
                     min: 1,
-                    max: 500,
+                    max: 100,
                     activeColor: const Color(0xFF10B981),
                     inactiveColor: isDark ? Colors.white10 : Colors.grey[200],
                     onChanged: (val) => setState(() => _radius = val),
