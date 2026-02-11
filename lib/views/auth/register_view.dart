@@ -230,53 +230,41 @@ class _RegisterViewState extends State<RegisterView> {
     final isDark = theme.brightness == Brightness.dark;
 
     return AppScaffold(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors:
-                isDark
-                    ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
-                    : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: isDark ? Colors.white : const Color(0xFF1a1a1a),
-                    ),
-                    onPressed: () => Navigator.pop(context),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: isDark ? Colors.white : const Color(0xFF1a1a1a),
                   ),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildHeader(isDark),
-                          const SizedBox(height: 48),
-                          _buildRegisterCard(isDark),
-                        ],
-                      ),
+            ),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildHeader(isDark),
+                        const SizedBox(height: 48),
+                        _buildRegisterCard(isDark),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -289,14 +277,10 @@ class _RegisterViewState extends State<RegisterView> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF10B981), Color(0xFF059669)],
-            ),
+            color: AppTheme.primary,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(0.4),
+                color: AppTheme.primary.withOpacity(0.4),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),

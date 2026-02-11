@@ -39,36 +39,19 @@ class _LoginViewState extends State<LoginView> {
     final isDark = theme.brightness == Brightness.dark;
     
     return AppScaffold(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF1a1a1a),
-                    const Color(0xFF0a0a0a),
-                  ]
-                : [
-                    const Color(0xFFF0FDF4),
-                    const Color(0xFFDCFCE7),
-                  ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildHeader(isDark),
-                    const SizedBox(height: 48),
-                    _buildLoginCard(isDark),
-                  ],
-                ),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildHeader(isDark),
+                  const SizedBox(height: 48),
+                  _buildLoginCard(isDark),
+                ],
               ),
             ),
           ),
@@ -84,17 +67,10 @@ class _LoginViewState extends State<LoginView> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF10B981),
-                Color(0xFF059669),
-              ],
-            ),
+            color: AppTheme.primary,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(0.4),
+                color: AppTheme.primary.withOpacity(0.4),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),

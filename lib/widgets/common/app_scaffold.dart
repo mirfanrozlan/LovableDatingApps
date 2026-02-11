@@ -9,10 +9,12 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       bottomNavigationBar: bottomNavigationBar,
       body: Container(
-        decoration: useGradient ? BoxDecoration(gradient: AppTheme.brandGradient) : const BoxDecoration(color: Colors.white),
+        decoration: isDark ? AppTheme.pageDecorationDark : AppTheme.pageDecoration,
         child: SafeArea(
           child: Center(
             child: child,

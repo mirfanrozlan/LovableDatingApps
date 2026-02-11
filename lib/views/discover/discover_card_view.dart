@@ -61,18 +61,11 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors:
-                      isDark
-                          ? [const Color(0xFF1a1a1a), const Color(0xFF0a0a0a)]
-                          : [const Color(0xFFF0FDF4), const Color(0xFFDCFCE7)],
-                ),
+                color: isDark ? AppTheme.cardBgDark : AppTheme.cardBgLight,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(0.3),
+                    color: AppTheme.accent.withOpacity(0.3),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   ),
@@ -84,13 +77,11 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                      ),
+                      color: AppTheme.accent,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF10B981).withOpacity(0.4),
+                          color: AppTheme.accent.withOpacity(0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
