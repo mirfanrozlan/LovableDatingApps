@@ -18,12 +18,24 @@ class MessagesService {
     return await _storage.read(key: 'auth_token');
   }
 
-  Future<List<ChatInviteModel>> getInvites() async {
+  Future<List<ChatInviteModel>> getInvites({
+    int page = 1,
+    int limit = 20,
+    String? status,
+  }) async {
     try {
       final token = await _getToken();
       if (token == null) return [];
 
-      final uri = Uri.https(_authority, '/api/getInvite');
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+      if (status != null) {
+        queryParams['status'] = status;
+      }
+
+      final uri = Uri.https(_authority, '/api/getInvite', queryParams);
       final response = await http.get(
         uri,
         headers: {

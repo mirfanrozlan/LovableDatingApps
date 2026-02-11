@@ -18,39 +18,90 @@ class FriendsHomeView extends StatefulWidget {
 class _FriendsHomeViewState extends State<FriendsHomeView> {
   final _service = MessagesService();
   final _discoverService = DiscoverService();
+  final ScrollController _scrollController = ScrollController();
+  
   bool _loading = false;
   String? _error;
   List<ChatInviteModel> _invites = [];
+  
+  // Pagination and Filtering
+  int _page = 1;
+  bool _hasMore = true;
+  String _selectedStatus = 'accepted'; // Default to Friends
 
   @override
   void initState() {
     super.initState();
-    _loadInvites();
+    _scrollController.addListener(_onScroll);
+    _loadInvites(refresh: true);
   }
 
-  Future<void> _loadInvites() async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_loading &&
+        _hasMore) {
+      _loadInvites();
+    }
+  }
+
+  Future<void> _loadInvites({bool refresh = false}) async {
+    if (_loading && !refresh) return;
+    
+    final targetStatus = _selectedStatus;
+
     setState(() {
       _loading = true;
-      _error = null;
+      if (refresh) {
+        _error = null;
+        _invites = [];
+        _page = 1;
+        _hasMore = true;
+      }
     });
+
     try {
-      final data = await _service.getInvites();
+      final data = await _service.getInvites(
+        page: _page,
+        limit: 20,
+        status: targetStatus,
+      );
+      
+      if (targetStatus != _selectedStatus) return;
+
       setState(() {
-        _invites =
-            data
-                .where(
-                  (i) =>
-                      i.friendStatus == 'accepted' ||
-                      i.friendStatus == 'pending' ||
-                      i.friendStatus == 'blocked',
-                )
-                .toList();
+        if (refresh) {
+          _invites = data;
+        } else {
+          _invites.addAll(data);
+        }
+        
+        if (data.length < 20) {
+          _hasMore = false;
+        } else {
+          _page++;
+        }
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted && targetStatus == _selectedStatus) setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && targetStatus == _selectedStatus) setState(() => _loading = false);
     }
+  }
+
+  void _setStatus(String status) {
+    if (_selectedStatus == status) return;
+    setState(() {
+      _selectedStatus = status;
+      _loading = false; // Allow new request to start immediately
+    });
+    _loadInvites(refresh: true);
   }
 
   void _openProfile(UserModel user) {
@@ -89,7 +140,9 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
     // response should be 'accepted', 'rejected' or 'blocked'
     final result = await _discoverService.respondInvite(inviteId, response);
     if (result['success'] == true) {
-      _loadInvites(); // Refresh list
+      setState(() {
+        _invites.removeWhere((i) => i.inviteId == inviteId);
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -161,12 +214,14 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                   children: [
                     // Header
                     _buildHeader(isDark),
+                    _buildFilters(isDark),
 
                     Expanded(
                       child: RefreshIndicator(
-                        onRefresh: _loadInvites,
+                        onRefresh: () => _loadInvites(refresh: true),
                         color: const Color(0xFF10B981),
                         child: CustomScrollView(
+                          controller: _scrollController,
                           physics: const BouncingScrollPhysics(
                             parent: AlwaysScrollableScrollPhysics(),
                           ),
@@ -320,11 +375,6 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                                     inv,
                                                     'accepted',
                                                   ),
-                                              onReject:
-                                                  () => _respondInvite(
-                                                    inv,
-                                                    'rejected',
-                                                  ),
                                               onBlock:
                                                   () => _respondInvite(
                                                     inv,
@@ -346,6 +396,17 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
                                           ],
                                         );
                                       }),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (_loading && _invites.isNotEmpty)
+                              const SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      color: Color(0xFF10B981),
                                     ),
                                   ),
                                 ),
@@ -375,6 +436,77 @@ class _FriendsHomeViewState extends State<FriendsHomeView> {
             fontWeight: FontWeight.w800,
             color: isDark ? Colors.white : const Color(0xFF064E3B),
             letterSpacing: -0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilters(bool isDark) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          _buildFilterChip('accepted', 'Friends', isDark),
+          const SizedBox(width: 12),
+          _buildFilterChip('blocked', 'Blocked', isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label, bool isDark) {
+    final isSelected = _selectedStatus == value;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (_selectedStatus != value) {
+            setState(() {
+              _selectedStatus = value;
+              _loadInvites(refresh: true);
+            });
+          }
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF10B981)
+                : isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF10B981)
+                  : isDark
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.grey.shade300,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : isDark
+                      ? Colors.white70
+                      : Colors.black87,
+            ),
           ),
         ),
       ),
@@ -412,7 +544,6 @@ class _MatchCard extends StatelessWidget {
   final VoidCallback onViewProfile;
   final VoidCallback onChat;
   final VoidCallback? onAccept;
-  final VoidCallback? onReject;
   final VoidCallback? onBlock;
   final bool isDark;
 
@@ -422,7 +553,6 @@ class _MatchCard extends StatelessWidget {
     required this.onViewProfile,
     required this.onChat,
     this.onAccept,
-    this.onReject,
     this.onBlock,
     required this.isDark,
   });
@@ -561,52 +691,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               // Chat Action Button
-              if (status == 'pending')
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onReject,
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: onAccept,
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF10B981),
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              else if (status == 'blocked')
+              if (status == 'blocked')
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
