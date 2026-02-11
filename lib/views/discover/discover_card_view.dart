@@ -22,6 +22,8 @@ class DiscoverCardView extends StatefulWidget {
 
 class _DiscoverCardViewState extends State<DiscoverCardView> {
   final _controller = DiscoverController();
+  final ScrollController _scrollController = ScrollController();
+  bool _isListView = false;
 
   @override
   void initState() {
@@ -35,7 +37,17 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
         _showMatchDialog(profile);
       }
     };
+    _scrollController.addListener(_onScroll);
     _initController();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_controller.loading &&
+        _controller.hasMore) {
+      _controller.loadProfiles();
+    }
   }
 
   void _showMatchDialog(DiscoverProfileModel profile) {
@@ -196,6 +208,7 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -235,16 +248,85 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
                             )
                             : _controller.profiles.isEmpty
                             ? _buildEmptyState(isDark)
-                            : _CardStack(
-                              controller: _controller,
-                              isDark: isDark,
-                            ),
+                            : _isListView
+                                ? _buildListView(isDark)
+                                : _CardStack(
+                                  controller: _controller,
+                                  isDark: isDark,
+                                ),
                   ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildListView(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color:
+            isDark
+                ? Colors.white.withOpacity(0.05)
+                : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color:
+              isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.white.withOpacity(0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color:
+                isDark
+                    ? Colors.black.withOpacity(0.2)
+                    : const Color(0xFF10B981).withOpacity(0.05),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListView.separated(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(bottom: 20),
+        itemCount: _controller.profiles.length + (_controller.loading ? 1 : 0),
+        separatorBuilder: (context, index) {
+          return Divider(
+            height: 1,
+            indent: 20,
+            endIndent: 20,
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.grey.shade100,
+          );
+        },
+        itemBuilder: (context, index) {
+          if (index == _controller.profiles.length) {
+            return const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: CircularProgressIndicator(color: Color(0xFF10B981)),
+              ),
+            );
+          }
+          final p = _controller.profiles[index];
+          return _ListCard(
+            p: p,
+            isDark: isDark,
+            onRequestChat: () => _controller.like(p),
+            onTap: () => Navigator.pushNamed(
+              context,
+              AppRoutes.discoverDetail,
+              arguments: p,
+            ),
+          );
+        },
       ),
     );
   }
@@ -282,16 +364,29 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
             letterSpacing: -0.5,
           ),
         ),
-        // Filter Button
+        // View Toggle & Filter Button
         Align(
           alignment: Alignment.centerRight,
-          child: IconButton(
-            onPressed: _openPreferences,
-            icon: Icon(
-              Icons.tune_rounded,
-              color: isDark ? Colors.white70 : Colors.black54,
-            ),
-            tooltip: 'Filters',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: () => setState(() => _isListView = !_isListView),
+                icon: Icon(
+                  _isListView ? Icons.style_rounded : Icons.grid_view_rounded,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                tooltip: _isListView ? 'Card View' : 'List View',
+              ),
+              IconButton(
+                onPressed: _openPreferences,
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                tooltip: 'Filters',
+              ),
+            ],
           ),
         ),
       ],
@@ -1132,6 +1227,317 @@ class _ActionButton extends StatelessWidget {
             ],
           ),
           child: Icon(icon, color: color, size: size),
+        ),
+      ),
+    );
+  }
+}
+
+class _ListCard extends StatelessWidget {
+  final DiscoverProfileModel p;
+  final bool isDark;
+  final VoidCallback onRequestChat;
+  final VoidCallback onTap;
+
+  const _ListCard({
+    required this.p,
+    required this.isDark,
+    required this.onRequestChat,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              // Avatar with gradient border
+              Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                  backgroundImage:
+                      p.media.isNotEmpty ? NetworkImage(p.media) : null,
+                  child:
+                      p.media.isEmpty
+                          ? Icon(
+                              Icons.person,
+                              color: const Color(0xFF10B981),
+                              size: 28,
+                            )
+                          : null,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            p.name,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (p.age > 0)
+                          Text(
+                            ', ${p.age}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${p.city}${p.country.isNotEmpty ? ", ${p.country}" : ""}',
+                      style: TextStyle(
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              // Request Chat Button
+              ElevatedButton(
+                onPressed: onRequestChat,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF10B981),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.person_add_rounded, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Add Friend',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GridCard extends StatelessWidget {
+  final DiscoverProfileModel p;
+  final bool isDark;
+  final VoidCallback? onLike;
+  final VoidCallback? onDislike;
+
+  const _GridCard({
+    required this.p,
+    required this.isDark,
+    this.onLike,
+    this.onDislike,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Background Image
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: p.media.isNotEmpty
+                    ? Image.network(
+                        p.media,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(
+                          color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
+                          child: Icon(
+                            Icons.person,
+                            size: 40,
+                            color: isDark ? Colors.white24 : Colors.black26,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: isDark ? Colors.white24 : Colors.black26,
+                        ),
+                      ),
+              ),
+            ),
+            // Gradient Overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.0),
+                      Colors.black.withOpacity(0.6),
+                      Colors.black.withOpacity(0.9),
+                    ],
+                    stops: const [0.0, 0.5, 0.8, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            // Content
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${p.name}, ${p.age}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  if (p.city.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: Colors.white70,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            p.city,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _SmallActionButton(
+                        icon: Icons.close,
+                        color: Colors.red,
+                        onPressed: onDislike ?? () {},
+                      ),
+                      _SmallActionButton(
+                        icon: Icons.info_outline,
+                        color: Colors.white,
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.discoverDetail,
+                          arguments: p,
+                        ),
+                      ),
+                      _SmallActionButton(
+                        icon: Icons.favorite,
+                        color: const Color(0xFF10B981),
+                        onPressed: onLike ?? () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SmallActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color color;
+
+  const _SmallActionButton({
+    required this.icon,
+    required this.onPressed,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(50),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.2),
+            border: Border.all(color: color.withOpacity(0.7), width: 1),
+          ),
+          child: Icon(icon, color: color, size: 16),
         ),
       ),
     );

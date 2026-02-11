@@ -31,6 +31,7 @@ class DiscoverController extends ChangeNotifier {
 
   List<DiscoverProfileModel> get profiles => _profiles;
   bool get loading => _loading;
+  bool get hasMore => _hasMore;
 
   String? get gender => _gender;
   int? get minAge => _minAge;
