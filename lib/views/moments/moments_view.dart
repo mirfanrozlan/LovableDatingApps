@@ -4,6 +4,7 @@ import '../../widgets/messages/app_bottom_nav.dart';
 import '../../controllers/moments_controller.dart';
 import '../../widgets/moments/moment_list.dart';
 import 'post_moment_view.dart';
+import '../../themes/theme.dart';
 
 class MomentsView extends StatefulWidget {
   const MomentsView({super.key});
@@ -47,23 +48,7 @@ class _MomentsViewState extends State<MomentsView> with SingleTickerProviderStat
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    const Color(0xFF0F1512),
-                    const Color(0xFF0A0F0D),
-                  ]
-                : [
-                    const Color(0xFFF0FDF8),
-                    const Color(0xFFECFDF5),
-                    const Color(0xFFD1FAE5),
-                  ],
-            stops: isDark ? null : const [0.0, 0.5, 1.0],
-          ),
-        ),
+        decoration: isDark ? AppTheme.pageDecorationDark : AppTheme.pageDecoration,
         child: Stack(
           children: [
             // Decorative circles
@@ -148,9 +133,7 @@ class _MomentsViewState extends State<MomentsView> with SingleTickerProviderStat
                         child: TabBar(
                           controller: _tabController,
                           indicator: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF10B981), Color(0xFF059669)],
-                            ),
+                            color: AppTheme.accent,
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
@@ -197,11 +180,7 @@ class _MomentsViewState extends State<MomentsView> with SingleTickerProviderStat
               bottom: 20,
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF059669)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppTheme.accent,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(

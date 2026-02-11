@@ -54,15 +54,7 @@ class _SettingsViewState extends State<SettingsView> {
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 4),
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
-                : [const Color(0xFFF0FDF8), const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
-          ),
-        ),
+        decoration: isDark ? AppTheme.pageDecorationDark : AppTheme.pageDecoration,
         child: Stack(
           children: [
             // Decorative elements

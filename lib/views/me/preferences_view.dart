@@ -119,13 +119,11 @@ class _PreferencesViewState extends State<PreferencesView> {
                     Container(
                       height: 56,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        ),
+                        color: AppTheme.accent,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF10B981).withOpacity(0.3),
+                            color: AppTheme.accent.withOpacity(0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),

@@ -115,21 +115,7 @@ class _PostMomentViewState extends State<PostMomentView> {
     
     return AppScaffold(
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    const Color(0xFF0F1512),
-                    const Color(0xFF0A0F0D),
-                  ]
-                : [
-                    const Color(0xFFF0FDF8),
-                    const Color(0xFFECFDF5),
-                  ],
-          ),
-        ),
+        decoration: isDark ? AppTheme.pageDecorationDark : AppTheme.pageDecoration,
         child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(

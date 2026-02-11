@@ -47,15 +47,7 @@ class _MessagesListViewState extends State<MessagesListView> {
     return AppScaffold(
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F1512), const Color(0xFF0A0F0D)]
-                : [const Color(0xFFF0FDF8), const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
-          ),
-        ),
+        decoration: isDark ? AppTheme.pageDecorationDark : AppTheme.pageDecoration,
         child: Stack(
           children: [
             // Decorative elements
@@ -138,9 +130,7 @@ class _MessagesListViewState extends State<MessagesListView> {
                                       padding: const EdgeInsets.all(2),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFF10B981), Color(0xFF34D399)],
-                                        ),
+                                        color: AppTheme.accent,
                                       ),
                                       child: CircleAvatar(
                                         radius: 26,
@@ -189,9 +179,7 @@ class _MessagesListViewState extends State<MessagesListView> {
                                             margin: const EdgeInsets.only(top: 6),
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
-                                              gradient: const LinearGradient(
-                                                colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                              ),
+                                              color: AppTheme.accent,
                                               borderRadius: BorderRadius.circular(10),
                                               boxShadow: [
                                                 BoxShadow(

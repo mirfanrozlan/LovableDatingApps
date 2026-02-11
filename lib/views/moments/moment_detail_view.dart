@@ -197,7 +197,7 @@ class _MomentDetailViewState extends State<MomentDetailView> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  color: AppTheme.accent.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
