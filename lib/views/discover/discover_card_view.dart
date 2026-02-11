@@ -319,7 +319,8 @@ class _DiscoverCardViewState extends State<DiscoverCardView> {
           return _ListCard(
             p: p,
             isDark: isDark,
-            onRequestChat: () => _controller.like(p),
+            onLike: () => _controller.like(p),
+            onDislike: () => _controller.dislike(p),
             onTap: () => Navigator.pushNamed(
               context,
               AppRoutes.discoverDetail,
@@ -1236,13 +1237,15 @@ class _ActionButton extends StatelessWidget {
 class _ListCard extends StatelessWidget {
   final DiscoverProfileModel p;
   final bool isDark;
-  final VoidCallback onRequestChat;
+  final VoidCallback onLike;
+  final VoidCallback onDislike;
   final VoidCallback onTap;
 
   const _ListCard({
     required this.p,
     required this.isDark,
-    required this.onRequestChat,
+    required this.onLike,
+    required this.onDislike,
     required this.onTap,
   });
 
@@ -1323,32 +1326,50 @@ class _ListCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Request Chat Button
-              ElevatedButton(
-                onPressed: onRequestChat,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.person_add_rounded, size: 18),
-                    SizedBox(width: 6),
-                    Text(
-                      'Add Friend',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+              // Action Buttons
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onDislike,
+                      borderRadius: BorderRadius.circular(50),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.red,
+                          size: 20,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onLike,
+                      borderRadius: BorderRadius.circular(50),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.favorite_rounded,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
