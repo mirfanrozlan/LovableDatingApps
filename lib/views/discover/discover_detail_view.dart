@@ -3,6 +3,7 @@ import '../../widgets/common/app_scaffold.dart';
 import '../../widgets/messages/app_bottom_nav.dart';
 import '../../models/discover_profile_model.dart';
 import '../../controllers/discover_controller.dart';
+import '../../themes/theme.dart';
 
 class DiscoverDetailView extends StatelessWidget {
   const DiscoverDetailView({super.key});
@@ -57,12 +58,10 @@ class _Header extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF059669)],
-                ),
+                color: AppTheme.accent,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF10B981).withOpacity(0.35),
+                    color: AppTheme.accent.withOpacity(0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -165,9 +164,7 @@ class _ProfileCard extends StatelessWidget {
                           padding: const EdgeInsets.all(8),
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF10B981), Color(0xFF059669)],
-                            ),
+                            color: AppTheme.accent,
                           ),
                           child: const Icon(
                             Icons.verified,
