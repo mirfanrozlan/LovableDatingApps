@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import '../../models/messages/chat_summary_model.dart';
 import '../../models/messages/message_model.dart';
 import '../../services/messages_service.dart';
+import '../../services/local_storage_service.dart';
 
 class MessagesController extends ChangeNotifier {
   final MessagesService _service = MessagesService();
+  final LocalStorageService _localStore = LocalStorageService();
 
   List<ChatSummaryModel> _chats = [];
   bool _isLoading = false;
@@ -23,7 +25,12 @@ class MessagesController extends ChangeNotifier {
   final Set<String> _knownMessageIds = {};
 
   MessagesController() {
-    // Optionally load on init if singleton, but usually called from view
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _service.init();
+    await _localStore.init();
   }
 
   @override
@@ -39,25 +46,31 @@ class MessagesController extends ChangeNotifier {
 
     try {
       final invites = await _service.getInvites();
-      _chats =
-          invites
-              .where((invite) => invite.friendStatus == 'accepted')
-              .map((invite) {
-            // Map invite to ChatSummaryModel
-            // Since we don't have message history yet, we show placeholder
-            return ChatSummaryModel(
-              id: invite.user.id.toString(),
-              name: invite.user.name,
-              initials:
-                  invite.user.name.isNotEmpty
-                      ? invite.user.name.substring(0, 1).toUpperCase()
-                      : '?',
-              avatarUrl: invite.user.media,
-              lastMessage: 'Say hi!', // Placeholder
-              time: '',
-              unread: 0,
-            );
-          }).toList();
+      final List<ChatSummaryModel> updatedChats = [];
+
+      for (final invite in invites.where((i) => i.friendStatus == 'accepted')) {
+        final chatId = invite.user.id.toString();
+        
+        // Try to get last message from local storage
+        final localMessages = await _localStore.getMessages(chatId);
+        final lastMsg = localMessages.isNotEmpty ? localMessages.last.text : 'Say hi!';
+        final lastTime = localMessages.isNotEmpty 
+            ? _formatTime(localMessages.last.timestamp)
+            : '';
+
+        updatedChats.add(ChatSummaryModel(
+          id: chatId,
+          name: invite.user.name,
+          initials: invite.user.name.isNotEmpty
+              ? invite.user.name.substring(0, 1).toUpperCase()
+              : '?',
+          avatarUrl: invite.user.media,
+          lastMessage: lastMsg,
+          time: lastTime,
+          unread: 0,
+        ));
+      }
+      _chats = updatedChats;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -90,6 +103,9 @@ class MessagesController extends ChangeNotifier {
 
     _messages.add(msg);
     notifyListeners();
+    
+    // Save to local encrypted storage
+    await _localStore.saveMessage(msg);
 
     try {
       final result = await _service.sendMessage(userId, text);
@@ -180,6 +196,9 @@ class MessagesController extends ChangeNotifier {
 
     _messages.add(msg);
     notifyListeners();
+    
+    // Save to local encrypted storage
+    _localStore.saveMessage(msg);
   }
 
   // Real-time connection stub - Pusher removed as requested
@@ -190,6 +209,14 @@ class MessagesController extends ChangeNotifier {
     try {
       _activeChatId = chatId;
       _messages.clear();
+      
+      // Load from local storage
+      final localMessages = await _localStore.getMessages(chatId);
+      _messages.addAll(localMessages);
+      for (final m in localMessages) {
+        _knownMessageIds.add(m.id);
+      }
+      notifyListeners();
 
       _msgSub?.cancel();
       _msgSub = _service.messages.listen((data) {
@@ -225,7 +252,7 @@ class MessagesController extends ChangeNotifier {
               (m) => m.chatId == chatId && m.isMe && m.text == text.toString(),
             );
             if (idx != -1) {
-              _messages[idx] = MessageModel(
+              final updatedMsg = MessageModel(
                 id: idStr ?? when.millisecondsSinceEpoch.toString(),
                 chatId: chatId,
                 text: text.toString(),
@@ -233,6 +260,8 @@ class MessagesController extends ChangeNotifier {
                 isMe: true,
                 largeEmoji: largeEmoji,
               );
+              _messages[idx] = updatedMsg;
+              _localStore.saveMessage(updatedMsg);
             } else {
               final msg = MessageModel(
                 id: idStr ?? when.millisecondsSinceEpoch.toString(),
@@ -243,6 +272,7 @@ class MessagesController extends ChangeNotifier {
                 largeEmoji: largeEmoji,
               );
               _messages.add(msg);
+              _localStore.saveMessage(msg);
             }
           } else {
             final msg = MessageModel(
@@ -254,6 +284,7 @@ class MessagesController extends ChangeNotifier {
               largeEmoji: largeEmoji,
             );
             _messages.add(msg);
+            _localStore.saveMessage(msg);
           }
           if (idStr != null) _knownMessageIds.add(idStr);
           notifyListeners();
@@ -287,6 +318,19 @@ class MessagesController extends ChangeNotifier {
       if (parsed != null) return parsed;
     }
     return DateTime.now();
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inDays == 0) {
+      return "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+    } else if (diff.inDays < 7) {
+      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return days[dt.weekday - 1];
+    } else {
+      return "${dt.day}/${dt.month}";
+    }
   }
 
   bool _isEmojiOnly(String input) {

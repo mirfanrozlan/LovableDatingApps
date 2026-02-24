@@ -5,14 +5,24 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/messages/chat_invite_model.dart';
 import '../models/user_model.dart';
 import 'package:centrifuge/centrifuge.dart';
+import 'crypto_service.dart';
+import 'local_storage_service.dart';
+import '../models/messages/message_model.dart';
 
 class MessagesService {
   static const String _authority = 'demo.mazri-minecraft.xyz';
   final _storage = const FlutterSecureStorage();
+  final _crypto = CryptoService();
+  final _localStore = LocalStorageService();
+  
   late Client centrifuge;
   final _incomingController =
       StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get messages => _incomingController.stream;
+
+  Future<void> init() async {
+    await _localStore.init();
+  }
 
   Future<String?> _getToken() async {
     return await _storage.read(key: 'auth_token');
@@ -64,6 +74,9 @@ class MessagesService {
       final token = await _getToken();
       if (token == null) return null;
 
+      // E2EE: Encrypt message before sending
+      final encryptedMessage = await _crypto.encryptMessage(receiverId.toString(), message);
+
       final uri = Uri.https(_authority, '/api/chat/send');
       final response = await http.post(
         uri,
@@ -71,7 +84,7 @@ class MessagesService {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'receiver_id': receiverId, 'message': message}),
+        body: jsonEncode({'receiver_id': receiverId, 'message': encryptedMessage}),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -244,14 +257,23 @@ class MessagesService {
           channel,
           SubscriptionConfig(token: subToken),
         );
-        sub.publication.listen((event) {
+        sub.publication.listen((event) async {
           print(event);
           try {
             final raw = utf8.decode(event.data);
             final payload = jsonDecode(raw) as Map<String, dynamic>;
             final msg = payload['message'];
-            if (msg is String) {
-              final trimmed = msg.trim();
+            final senderId = payload['sender_id']?.toString();
+
+            if (msg is String && senderId != null) {
+              // E2EE: Decrypt message
+              // Note: If we are the sender, we need to decrypt with receiver's ID context? 
+              // Actually, our CryptoService derives key from chatId.
+              // If we receive a message from senderId, we use senderId to decrypt.
+              final decrypted = await _crypto.decryptMessage(senderId, msg);
+              payload['message'] = decrypted;
+              
+              final trimmed = decrypted.trim();
               final emojiOnly = _isEmojiOnly(trimmed);
               payload['render_large_emoji'] = emojiOnly;
             }
@@ -290,8 +312,17 @@ class MessagesService {
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
         final items = (body['messages'] ?? []) as List<dynamic>;
+        
+        // The channel name is usually 'chat:USER_ID' or similar. 
+        // We need to extract the chatId to decrypt correctly.
+        final chatId = channel.split(':').last;
+
         for (final item in items) {
           if (item is Map<String, dynamic>) {
+            final msg = item['message'];
+            if (msg is String) {
+              item['message'] = await _crypto.decryptMessage(chatId, msg);
+            }
             _incomingController.add(item);
           }
         }
